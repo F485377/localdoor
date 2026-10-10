@@ -1,0 +1,6 @@
+!.env.example
+.env*
+.vercel
+dist
+dist-demo
+node_modules

@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// お店。旅行者が知りたい情報（服装・ルール・食材・営業時間・治安・受け入れ態勢）を持つ
+// source = "haisai"：Haisai が直接集めた情報（予約もできる）
+// source = "osm"   ：OpenStreetMap から取り込んだお店（ODbL。画面に出典を表示する。予約はまだできない）
+// 情報がわからない項目は null（例：カードが使えるか不明）
+model Place {
+  id            String   @id @default(cuid())
+  source        String   @default("haisai")
+  osmId         String?  @unique // 例: "node/123456"
+  name          String
+  localName     String // 現地の看板の表記
+  category      String // restaurant | cafe | bar
+  cuisine       String[] @default([]) // 料理の種類（ramen, sushi, italian...）
+  description   String?
+  address       String?
+  city          String
+  country       String // ISO 3166-1 の2文字コード（JP, KR, FR...）
+  timeZone      String // 例: "Asia/Tokyo"。予約日の判定に使う
+  currency      String // ISO 4217（JPY, KRW, EUR...）
+  lat           Float
+  lng           Float
+  priceLevel    Int? // 1-4（$〜$$$$）。通貨が違っても比べられるように
+  priceMin      Int? // 現地通貨
+  priceMax      Int? // 現地通貨
+  openingHours  String? // 例: "11:00-22:00 (closed Wed)"。OSM の書き方（Mo-Fr 11:00-22:00）のこともある
+  dressCode     String?
+  rules         String[]
+  ingredients   String[]
+  allergens     String[]
+  safetyNote    String?
+  phone         String?
+  website       String?
+  englishMenu   Boolean?
+  englishStaff  Boolean?
+  cardAccepted  Boolean?
+  halal         Boolean?
+  vegetarian    Boolean?
+  googlePlaceId String?
+  // 英語以外の言語の訳。{ ja: { description, rules, city, ... }, ko: {...} }。訳がない項目は英語のまま出す
+  translations  Json?
+  deposit       Int? // 予約時に仮押さえする金額（現地通貨）。null なら予約できない
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  reviews      Review[]
+  reservations Reservation[]
+  photos       Photo[]
+
+  @@index([city])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  placeId   String
+  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  author    String
+  country   String?
+  rating    Int // 1-5
+  comment   String
+  userId    String? // ログインして書いたときの Firebase の uid
+  authorKey String? // この端末の目印（ログインしていなくても「自分の口コミ」を出すため）
+  createdAt DateTime @default(now())
+  photos    Photo[]
+
+  @@index([placeId])
+  @@index([authorKey])
+  @@index([userId])
+}
+
+// お店の写真（料理・内装）。口コミと一緒に投稿される。画像そのものは Vercel Blob に置き、ここには URL だけ持つ
+model Photo {
+  id        String   @id @default(cuid())
+  placeId   String
+  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  reviewId  String?
+  review    Review?  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  kind      String // food | interior | other
+  url       String
+  pathname  String // Vercel Blob 上の場所（消すときに使う）
+  createdAt DateTime @default(now())
+
+  @@index([placeId])
+}
+
+// アカウント。id は Firebase Authentication の uid
+model User {
+  id          String   @id
+  provider    String // google.com | apple.com | phone | password
+  name        String?
+  email       String?
+  phone       String?
+  language    String   @default("en")
+  homeCountry String?
+  destination String?
+  diet        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reservations Reservation[]
+}
+
+model Reservation {
+  id            String   @id @default(cuid())
+  placeId       String
+  place         Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  userId        String? // ログインして予約したときだけ入る
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name          String
+  email         String
+  date          String // YYYY-MM-DD（お店の現地日付）
+  time          String // HH:mm
+  partySize     Int
+  note          String?
+  language      String   @default("en")
+  status        String   @default("CONFIRMED") // CONFIRMED | CANCELLED
+  depositAmount Int
+  currency      String
+  paymentStatus String   @default("AUTHORIZED") // AUTHORIZED | REFUNDED
+  cardBrand     String?
+  cardLast4     String?
+  createdAt     DateTime @default(now())
+
+  @@index([email])
+  @@index([userId])
+}

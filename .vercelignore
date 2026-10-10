@@ -1,0 +1,8 @@
+# Vercel にアップロードしないもの（秘密の値・作業用のファイル）
+.env*
+!.env.example
+node_modules
+dist
+dist-demo
+.devcontainer
+previews
