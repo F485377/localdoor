@@ -2,132 +2,321 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// 接続先は DATABASE_URL。ほかのテーブルと混ざらないように、Postgres の別スキーマ（既定は "mvp"）を使う。
+// スキーマ名は lib/prisma.js と scripts/db-push.js が URL に付ける（DB_SCHEMA で変えられる）
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// お店。旅行者が知りたい情報（服装・ルール・食材・営業時間・治安・受け入れ態勢）を持つ
-// source = "haisai"：Haisai が直接集めた情報（予約もできる）
-// source = "osm"   ：OpenStreetMap から取り込んだお店（ODbL。画面に出典を表示する。予約はまだできない）
-// 情報がわからない項目は null（例：カードが使えるか不明）
-model Place {
-  id            String   @id @default(cuid())
-  source        String   @default("haisai")
-  osmId         String?  @unique // 例: "node/123456"
-  name          String
-  localName     String // 現地の看板の表記
-  category      String // restaurant | cafe | bar
-  cuisine       String[] @default([]) // 料理の種類（ramen, sushi, italian...）
-  description   String?
-  address       String?
-  city          String
-  country       String // ISO 3166-1 の2文字コード（JP, KR, FR...）
-  timeZone      String // 例: "Asia/Tokyo"。予約日の判定に使う
-  currency      String // ISO 4217（JPY, KRW, EUR...）
-  lat           Float
-  lng           Float
-  priceLevel    Int? // 1-4（$〜$$$$）。通貨が違っても比べられるように
-  priceMin      Int? // 現地通貨
-  priceMax      Int? // 現地通貨
-  openingHours  String? // 例: "11:00-22:00 (closed Wed)"。OSM の書き方（Mo-Fr 11:00-22:00）のこともある
-  dressCode     String?
-  rules         String[]
-  ingredients   String[]
-  allergens     String[]
-  safetyNote    String?
-  phone         String?
-  website       String?
-  englishMenu   Boolean?
-  englishStaff  Boolean?
-  cardAccepted  Boolean?
-  halal         Boolean?
-  vegetarian    Boolean?
-  googlePlaceId String?
-  // 英語以外の言語の訳。{ ja: { description, rules, city, ... }, ko: {...} }。訳がない項目は英語のまま出す
-  translations  Json?
-  deposit       Int? // 予約時に仮押さえする金額（現地通貨）。null なら予約できない
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+// ───────────── アカウント ─────────────
 
-  reviews      Review[]
-  reservations Reservation[]
-  photos       Photo[]
-
-  @@index([city])
+enum Role {
+  TRAVELER
+  BUSINESS
 }
 
-model Review {
-  id        String   @id @default(cuid())
-  placeId   String
-  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
-  author    String
-  country   String?
-  rating    Int // 1-5
-  comment   String
-  userId    String? // ログインして書いたときの Firebase の uid
-  authorKey String? // この端末の目印（ログインしていなくても「自分の口コミ」を出すため）
-  createdAt DateTime @default(now())
-  photos    Photo[]
-
-  @@index([placeId])
-  @@index([authorKey])
-  @@index([userId])
-}
-
-// お店の写真（料理・内装）。口コミと一緒に投稿される。画像そのものは Vercel Blob に置き、ここには URL だけ持つ
-model Photo {
-  id        String   @id @default(cuid())
-  placeId   String
-  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
-  reviewId  String?
-  review    Review?  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  kind      String // food | interior | other
-  url       String
-  pathname  String // Vercel Blob 上の場所（消すときに使う）
-  createdAt DateTime @default(now())
-
-  @@index([placeId])
-}
-
-// アカウント。id は Firebase Authentication の uid
+// 旅行者と事業者のアカウント。メールアドレス＋パスワードで登録する。
+// 退会すると email と passwordHash を消し（同じアドレスで登録し直せる）、deletedAt を入れる。
+// 同じメールアドレスで、旅行者と事業者のアカウントを1つずつ作れる（メールアドレス＋立場で一意）
 model User {
-  id          String   @id
-  provider    String // google.com | apple.com | phone | password
-  name        String?
-  email       String?
-  phone       String?
-  language    String   @default("en")
-  homeCountry String?
-  destination String?
-  diet        String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String    @id @default(cuid())
+  email        String? // 小文字にそろえて保存する
+  passwordHash String?
+  role         Role
+  name         String // 旅行者：事業者に表示する名前。事業者：担当者名
+  currency     String    @default("USD") // 旅行者の表示通貨（目安の併記）
+  lang         String    @default("en") // 旅行者の表示言語：en | zh（簡体字）| zt（繁体字）| ko
+  termsAt      DateTime // 利用規約・プライバシーポリシーに同意した日時
+  createdAt    DateTime  @default(now())
+  deletedAt    DateTime?
 
-  reservations Reservation[]
+  sessions Session[]
+  resets   PasswordReset[]
+  places   Place[]
+  bookings Booking[]
+  threads  Thread[]
+  saved    SavedPlace[]
+  reviews  Review[]
+
+  @@unique([email, role])
 }
 
-model Reservation {
-  id            String   @id @default(cuid())
-  placeId       String
-  place         Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
-  userId        String? // ログインして予約したときだけ入る
-  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  name          String
-  email         String
-  date          String // YYYY-MM-DD（お店の現地日付）
-  time          String // HH:mm
-  partySize     Int
-  note          String?
-  language      String   @default("en")
-  status        String   @default("CONFIRMED") // CONFIRMED | CANCELLED
-  depositAmount Int
-  currency      String
-  paymentStatus String   @default("AUTHORIZED") // AUTHORIZED | REFUNDED
-  cardBrand     String?
-  cardLast4     String?
-  createdAt     DateTime @default(now())
+// ログイン中の端末。Cookie にはランダムなトークンを入れ、DB にはそのハッシュだけを残す
+model Session {
+  id        String   @id // トークンの SHA-256
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 
-  @@index([email])
   @@index([userId])
+}
+
+// パスワード再設定のリンク。1回だけ使えて、期限付き
+model PasswordReset {
+  id        String    @id // トークンの SHA-256
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  @@index([userId])
+}
+
+// ログイン失敗・再設定メールの回数制限。key は "login:<email>" など
+model Throttle {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+}
+
+// ───────────── 店舗 ─────────────
+
+// 事業者1人につき店舗は1つ。日本語で入力し、保存したときに英語・簡体字・繁体字・韓国語の訳（i18n）を作る。
+// published：事業者が公開しているか（必須項目がそろっていないと公開できない）
+// suspended：運営が DB で非公開にした（事業者は公開に戻せない）
+model Place {
+  id          String    @id @default(cuid())
+  ownerId     String
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  published   Boolean   @default(false)
+  suspended   Boolean   @default(false)
+  deletedAt   DateTime? // 事業者が削除した日時。旅行者の予約の記録のため、行は残して見えなくする
+  publishedAt DateTime? // はじめて公開した日時（一覧の新着順に使う）
+
+  category    String? // experience | restaurant
+  payments    String[]  @default([]) // 支払方法 cash | card | ic | qr（複数）
+  foundedYear Int? // 創業年（営業年数はここから計算）
+  genre       String? // ジャンル（lib/domain.js の GENRES。和食・洋食・中華・居酒屋…／料理・工芸・文化…）
+  prefCode    String? // 都道府県（01〜47。lib/data/prefs.json）
+  cityId      String? // 市区町村（全国地方公共団体コードの上5桁。lib/data/cities.json）
+  name        String  @default("")
+  address     String  @default("")
+  description String  @default("")
+  price       Int? // 1人あたりの料金（円）。現地払い。体験は必須、飲食店は任意
+  priceBand   String? // 値段帯：lt1000 | 1000to3000 | 3000to5000 | 5000to10000 | gt10000
+  durationMin Int? // 所要時間（分）
+  payment     String? // cash | card（現地での支払い方法）
+  link        String? // 外部リンク（HP・Instagram）。http(s) だけ
+  localPct    Int? // 地元のお客さんの割合（0〜100、10刻み。事業者の申告）
+  years       String? // lt10 | 10to30 | gt30
+  station     String  @default("") // 最寄り駅（日本語。訳は i18n）
+  stationKm   Float? // 最寄り駅からの距離（km、小数第1位まで）
+  lat         Float? // 地図上の位置（事業者がピンで合わせる）
+  lng         Float?
+
+  // お店の設備・方針（任意）
+  smoking     String? // none | separated | allowed
+  pets        String? // ok | no
+  privateRoom Boolean?
+
+  // 写真（Vercel Blob の URL。1枚目が一覧の写真）、おすすめ、こだわり、特典
+  photos        String[] @default([])
+  popular       Json? // 一番人気 { name, price, note, photo }
+  ownerPick     Json? // 店主のおすすめ { name, price, note, photo }
+  menu          Json? // メニュー表 [{ name, price, amount（量）, note }]
+  kodawari      String   @default("") // 店主のこだわり（文章）
+  kodawariPhoto String?
+  perk          String   @default("") // このアプリからの予約の特典（任意）
+
+  // カテゴリ別項目
+  belongings  String   @default("") // 体験：持ち物
+  minPeople   Int? // 体験：最少催行人数
+  dietSupport String[] @default([]) // 飲食店：食事制限への対応
+  menuStyle   String? // 飲食店：course | alacarte | both
+
+  // 予約の設定
+  slots          Json  @default("[]") // [{ time: "10:00", end: "12:00", capacity: 6 }]
+  closedWeekdays Int[] @default([]) // 定休日（0 = 日曜）
+  leadDays       Int   @default(1) // 受付締切：0 = 当日OK、1 = 前日まで、2 = 2日前まで
+
+  // 訳（保存したときに Gemini で作る）。{ en: { name, address, ... }, zh: {...}, zt: {...}, ko: {...} }
+  // translatedAt が null なら翻訳できていない（旅行者には日本語のまま出す）
+  i18n         Json?
+  translatedAt DateTime?
+
+  sample    Boolean  @default(false) // デモ用の架空の店（demo スキーマにだけ入れる。画面に「サンプル」と出す）
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  closures Closure[]
+  bookings Booking[]
+  threads  Thread[]
+  reports  Report[]
+  views    PlaceView[]
+  overrides SlotOverride[]
+  dayMarks  DayMark[]
+  reviews   Review[]
+  savedBy  SavedPlace[]
+
+  @@index([published, suspended, publishedAt])
+  @@index([prefCode, cityId])
+  @@index([ownerId])
+}
+
+// 受付停止日（1日1行）
+model Closure {
+  placeId String
+  place   Place  @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  date    String // YYYY-MM-DD（日本時間）
+
+  @@id([placeId, date])
+}
+
+// その日の、旅行者に見せる印を事業者が決める（✕ は Closure）。'o' ＝〇、'limited' ＝△、'none' ＝ー（まだ決まっていない。予約できない）
+model DayMark {
+  placeId String
+  place   Place  @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  date    String // YYYY-MM-DD（日本時間）
+  mark    String
+
+  @@id([placeId, date])
+}
+
+// その日だけ、時間枠の定員を変える（0 ＝ その枠だけ受付を止める）。いつもの定員に戻したら消す
+model SlotOverride {
+  placeId  String
+  place    Place  @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  date     String // YYYY-MM-DD（日本時間）
+  time     String // 時間枠の開始 HH:MM
+  capacity Int
+
+  @@id([placeId, date, time])
+}
+
+// 旅行者が保存したお店（お気に入り）。ログインが必要
+model SavedPlace {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  placeId   String
+  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, placeId])
+}
+
+// ───────────── 予約 ─────────────
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED_BY_TRAVELER
+  CANCELLED_BY_BUSINESS
+}
+
+// 上限人数の内なら即時確定。「完了」は保存せず、日時を過ぎたら画面で完了と出す
+model Booking {
+  id         String        @id @default(cuid())
+  placeId    String
+  place      Place         @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  travelerId String
+  traveler   User          @relation(fields: [travelerId], references: [id], onDelete: Cascade)
+  date       String // YYYY-MM-DD（日本時間）
+  time       String // 開始 HH:MM
+  endTime    String? // 終了 HH:MM
+  partySize  Int
+  diets      String[]      @default([]) // lib/domain.js の DIETS
+  message    String        @default("") // 旅行者が書いたまま
+  messageJa  String? // 日本語訳
+  lang       String        @default("en") // 予約したときの旅行者の言語
+  status     BookingStatus @default(CONFIRMED)
+
+  cancelledAt  DateTime?
+  cancelReason String? // 事業者のキャンセル理由：closed | weather | other
+  cancelNote   String? // 事業者が書いた補足（日本語）
+  cancelNoteTr String? // 旅行者の言語の訳
+
+  bizSeenAt      DateTime? // 事業者が新着（予約・旅行者のキャンセル）を見た
+  travelerSeenAt DateTime? // 旅行者が事業者のキャンセルを見た
+  createdAt      DateTime  @default(now())
+
+  @@index([placeId, date])
+  @@index([travelerId])
+}
+
+// ───────────── チャット ─────────────
+
+// 店舗と旅行者の組ごとに1つ
+model Thread {
+  id             String    @id @default(cuid())
+  placeId        String
+  place          Place     @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  travelerId     String
+  traveler       User      @relation(fields: [travelerId], references: [id], onDelete: Cascade)
+  blocked        Boolean   @default(false) // 事業者がブロックした
+  lastMessageAt  DateTime  @default(now())
+  lastBizAt      DateTime? // 事業者が最後に書いた日時（旅行者側の未読の判定）
+  lastTravelerAt DateTime? // 旅行者が最後に書いた日時（事業者側の未読の判定）
+  travelerReadAt DateTime?
+  bizReadAt      DateTime?
+  createdAt      DateTime  @default(now())
+  messages       Message[]
+
+  @@unique([placeId, travelerId])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  threadId   String
+  thread     Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  fromBiz    Boolean // true = 事業者（日本語）、false = 旅行者（英語）
+  text       String // 書いたまま
+  translated String? // 相手の言語の訳。null なら翻訳できなかった
+  lang       String   @default("en") // 旅行者の言語（旅行者が書いた言語、または事業者の文の訳し先）
+  templateId String? // 定型文から送ったとき（訳は lib/templates.js の決まった訳を使う）
+  createdAt  DateTime @default(now())
+
+  @@index([threadId, createdAt])
+}
+
+// ───────────── 運営 ─────────────
+
+// 「この店舗を報告」。運営が毎日確認する（scripts/ops.js）
+model Report {
+  id        String    @id @default(cuid())
+  placeId   String
+  place     Place     @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  userId    String?
+  reason    String // fake | wrong | inappropriate | other
+  note      String    @default("")
+  createdAt DateTime  @default(now())
+  checkedAt DateTime?
+}
+
+// 詳細ページの閲覧（成功指標の集計用）
+model PlaceView {
+  id        String   @id @default(cuid())
+  placeId   String
+  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@index([placeId, createdAt])
+}
+
+// 口コミ。そのお店を予約して、来店日を過ぎた旅行者だけが書ける（1人1店に1つ。書き直せる）
+model Review {
+  id         String    @id @default(cuid())
+  placeId    String
+  place      Place     @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  travelerId String
+  traveler   User      @relation(fields: [travelerId], references: [id], onDelete: Cascade)
+  rating     Int // 1〜5
+  withWhom   String // 来店シーン：誰と（必須）
+  people     Int // 来店シーン：何人で（必須）
+  occasion   String? // 来店シーン：どんな時に（デート・誕生日など。任意）
+  religion   String? // 宗教（任意）
+  calm       Int? // 雰囲気 1 にぎやか 〜 5 落ち着いた（任意）
+  special    Int? // 1 普段使い 〜 5 特別な日（任意）
+  comment    String    @default("")
+  lang       String // 書いた言語
+  i18n       Json? // ほかの言語への訳 { en, zh, zt, ko, ja }
+  sample     Boolean   @default(false) // デモ用の架空の口コミ
+  hidden     Boolean   @default(false) // 運営が非表示にした
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([placeId, travelerId])
+  @@index([placeId, createdAt])
 }

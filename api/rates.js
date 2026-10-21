@@ -1,6 +1,6 @@
 import { methodNotAllowed } from '../lib/http.js';
 
-// GET /api/rates  為替レート（1 USD あたり）。お店の値段を自分の国の通貨に換算する目安に使う。
+// GET /api/rates  為替レート（1 USD あたり）。料金（日本円）を旅行者の通貨に換算する目安に使う。
 // 出典：ExchangeRate-API の無料版（APIキー不要。1日1回更新）。画面に出典リンクを出すことが利用条件。
 // Vercel のキャッシュで12時間使い回すので、元のサーバーにはほとんどアクセスしない。
 const SOURCE = 'https://open.er-api.com/v6/latest/USD';

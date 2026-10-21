@@ -61,7 +61,7 @@ function vercelApiDev() {
           return res.end(JSON.stringify({ error: 'Not found' }));
         }
         req.query = { ...Object.fromEntries(url.searchParams), ...route.params };
-        // JSON のときだけ先に読む。写真などはそのまま API 側で読む
+        // JSON のときだけ先に読む
         if (String(req.headers['content-type'] ?? '').includes('application/json')) req.body = await readBody(req);
         res.status = (code) => ((res.statusCode = code), res);
         res.json = (data) => {
@@ -90,10 +90,12 @@ export default defineConfig(({ mode, command }) => {
   }
   return {
     plugins: [react(), command === 'serve' && !process.env.VERCEL && vercelApiDev()],
-    ssr: { external: ['@prisma/client'] },
+    ssr: { external: ['@prisma/client', '@vercel/blob'] },
+    // 依存の事前読み込みは index.html からだけ（previews/ などの古いファイルは見ない）
+    optimizeDeps: { entries: ['index.html'] },
     // Dev Container の外（パソコンのブラウザ）から開けるように、すべての住所で待ち受ける
-    server: { host: true, port: 5173 },
-    // デモ版は1枚のHTMLにまとめるので、遅延読み込みのファイルも分割しない
-    build: process.env.VITE_DEMO === '1' ? { rollupOptions: { output: { inlineDynamicImports: true } } } : {},
+    // WSL などファイル監視が効かない環境でも、編集したファイルや public/ に足した画像に気づけるよう定期的に確かめる
+    // スマホからは VS Code のポート転送（〜.devtunnels.ms）か Cloudflare の一時トンネル（〜.trycloudflare.com）で開くので、そのホスト名を許可する
+    server: { host: true, port: 5173, allowedHosts: ['.devtunnels.ms', '.trycloudflare.com'], watch: { usePolling: true, interval: 500 } },
   };
 });

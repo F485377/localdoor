@@ -1,11 +1,11 @@
 {
-  "name": "Haisai",
-  "short_name": "Haisai",
-  "description": "Find local restaurants anywhere in the world, in your language.",
+  "name": "LocalDoor",
+  "short_name": "LocalDoor",
+  "description": "Find where locals eat and play in Japan, and book in your language.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#eaf4ff",
-  "theme_color": "#ff4f9a",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "/icon.svg",

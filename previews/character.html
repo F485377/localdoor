@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>キャラクター案</title>
+    <style>
+      body { margin: 0; background: #ffffff; font-family: sans-serif; }
+      .row { display: flex; align-items: flex-end; gap: 40px; padding: 30px; }
+      .big { width: 420px; height: 460px; }
+      .small { width: 110px; height: 120px; }
+      .head { width: 64px; height: 58px; }
+      .character { width: 100%; height: 100%; }
+      p { margin: 6px 0 0; text-align: center; color: #5d6a82; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import { createElement as h } from 'react';
+      import { createRoot } from 'react-dom/client';
+      import Character from './CharacterDraft-v3.jsx';
+      createRoot(document.getElementById('root')).render(
+        h('div', { className: 'row' },
+          h('div', null, h('div', { className: 'big' }, h(Character, { skipBirth: true })), h('p', null, '最初の案内の画面（大）')),
+          h('div', null, h('div', { className: 'small' }, h(Character, { skipBirth: true })), h('p', null, '画面の右下（小）')),
+          h('div', null, h('div', { className: 'head' }, h(Character, { pose: 'head' })), h('p', null, '隠したとき')),
+        ),
+      );
+    </script>
+  </body>
+</html>

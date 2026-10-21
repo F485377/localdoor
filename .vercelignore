@@ -6,3 +6,5 @@ dist
 dist-demo
 .devcontainer
 previews
+01_spec.md
+.vercel

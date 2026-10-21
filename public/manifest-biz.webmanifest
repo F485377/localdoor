@@ -1,0 +1,30 @@
+{
+  "name": "LocalDoor 事業者",
+  "short_name": "LocalDoor 事業者",
+  "description": "海外のお客様からの予約を日本語だけで受けるアプリ",
+  "start_url": "/biz",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "scope": "/",
+  "lang": "ja"
+}

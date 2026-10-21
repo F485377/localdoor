@@ -1,50 +1,97 @@
-// ブラウザからは必ず /api 経由でデータを取得する（DBには直接つながない）
-import { toQueryString } from '../lib/placeFilters.js';
-import { demoApi } from './demoApi.js';
-import { deviceId } from './device.js';
+// ブラウザからは必ず /api 経由でデータを取得する（DB には直接つながない）。
+// ログインは Cookie（HttpOnly）なので、ここではトークンを扱わない。
+// 旅行者と事業者でログインを分けているので、どちらの画面からの呼び出しかをヘッダーで伝える
 
-export const isDemo = import.meta.env.VITE_DEMO === '1';
+let side = 'traveler';
+export const setSide = (s) => {
+  side = s;
+};
+const sideHeader = () => ({ 'X-Jimoto-As': side });
 
-// ログイン中は、IDトークンを Authorization ヘッダーに付けて送る（auth.jsx が設定する）
-let getToken = () => Promise.resolve(null);
-export const setTokenGetter = (fn) => (getToken = fn);
+export class ApiError extends Error {
+  constructor(status, message, data = {}) {
+    super(message);
+    this.status = status;
+    this.code = data.code;
+    this.data = data;
+  }
+}
 
-async function request(path, options = {}) {
-  const token = await getToken().catch(() => null);
-  const raw = options.body instanceof Blob; // 写真などはそのまま送る
-  const res = await fetch(path, {
-    ...options,
-    headers: {
-      'Content-Type': raw ? options.body.type : 'application/json',
-      'X-Haisai-Device': deviceId(),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-    body: raw ? options.body : options.body ? JSON.stringify(options.body) : undefined,
-  });
+async function request(path, { method = 'GET', body, query, as } = {}) {
+  const entries = Object.entries(query ?? {}).filter(([, v]) => v !== undefined && v !== null && v !== '');
+  const qs = entries.length ? `?${new URLSearchParams(entries.map(([k, v]) => [k, String(v)]))}` : '';
+  let res;
+  try {
+    res = await fetch(`/api/${path}${qs}`, {
+      method,
+      credentials: 'same-origin',
+      headers: { ...(as ? { 'X-Jimoto-As': as } : sideHeader()), ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new ApiError(0, 'network', { code: 'network' });
+  }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  if (!res.ok) throw new ApiError(res.status, data.error || `Request failed (${res.status})`, data);
   return data;
 }
 
-const httpApi = {
-  listPlaces: (filters) => request(`/api/places?${toQueryString(filters)}`),
-  getPlace: (id) => request(`/api/places/${encodeURIComponent(id)}`),
-  getGoogleReviews: (placeId, lang) =>
-    request(`/api/google-reviews?placeId=${encodeURIComponent(placeId)}&lang=${lang}`),
-  createReview: (body) => request('/api/reviews', { method: 'POST', body }),
-  listMyReviews: () => request('/api/reviews?mine=1'),
-  uploadPhoto: (reviewId, kind, blob) =>
-    request(`/api/photos?reviewId=${encodeURIComponent(reviewId)}&kind=${kind}`, { method: 'POST', body: blob }),
-  createReservation: (body) => request('/api/reservations', { method: 'POST', body }),
-  listReservations: (email) =>
-    request(email ? `/api/reservations?email=${encodeURIComponent(email)}` : '/api/reservations'),
-  getRates: () => request('/api/rates'),
-  getMe: () => request('/api/me'),
-  saveMe: (profile) => request('/api/me', { method: 'PUT', body: profile }),
-  cancelReservation: (id, email) =>
-    request(`/api/reservations/${encodeURIComponent(id)}`, { method: 'PATCH', body: { action: 'cancel', email } }),
-};
+// 写真を送る（本文は画像そのもの。先に src/photos.js で小さくしておく）→ { url }
+async function uploadPhoto(blob) {
+  let res;
+  try {
+    res = await fetch('/api/photos', { method: 'POST', credentials: 'same-origin', headers: { 'X-Jimoto-As': 'business', 'Content-Type': blob.type || 'image/jpeg' }, body: blob });
+  } catch {
+    throw new ApiError(0, 'network', { code: 'network' });
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(res.status, data.error || `Upload failed (${res.status})`, data);
+  return data;
+}
 
-// デモ版ビルドではブラウザ内だけで動く API を使う
-export const api = isDemo ? demoApi : httpApi;
+export const api = {
+  // アカウント
+  me: (as) => request('auth', { as }),
+  register: (body) => request('auth', { method: 'POST', query: { action: 'register' }, body }),
+  login: (body) => request('auth', { method: 'POST', query: { action: 'login' }, body }),
+  logout: (as) => request('auth', { method: 'POST', query: { action: 'logout' }, as }),
+  forgot: (email) => request('auth', { method: 'POST', query: { action: 'forgot' }, body: { email } }),
+  reset: (token, password) => request('auth', { method: 'POST', query: { action: 'reset' }, body: { token, password } }),
+  updateMe: (body) => request('auth', { method: 'PATCH', body }),
+  withdraw: (password) => request('auth', { method: 'DELETE', body: { password } }),
+  // 店舗（旅行者）
+  places: (filters) => request('places', { query: filters }),
+  place: (id, lang) => request('places', { query: { id, lang } }),
+  report: (body) => request('places', { method: 'POST', query: { action: 'report' }, body }),
+  reviews: (id, lang) => request('places', { query: { reviews: id, lang } }),
+  writeReview: (body) => request('places', { method: 'POST', query: { action: 'review' }, body }),
+  saved: (lang) => request('places', { query: { saved: 1, lang } }),
+  savedIds: () => request('places', { query: { savedIds: 1 } }),
+  save: (placeId, saved) => request('places', { method: 'POST', query: { action: 'save' }, body: { placeId, saved } }),
+  rates: () => request('rates'),
+  // 予約（旅行者）
+  availability: (placeId, from, days) => request('bookings', { query: { availability: placeId, from, days } }),
+  bookings: () => request('bookings'),
+  book: (body) => request('bookings', { method: 'POST', body }),
+  cancelBooking: (id) => request('bookings', { method: 'PATCH', query: { id }, body: { action: 'cancel' } }),
+  // チャット（旅行者・事業者）
+  threads: () => request('messages'),
+  thread: (id) => request('messages', { query: { id } }),
+  threadForPlace: (placeId) => request('messages', { query: { placeId } }),
+  threadForTraveler: (travelerId, shop) => request('messages', { query: { travelerId, shop } }),
+  send: (body) => request('messages', { method: 'POST', body }),
+  block: (id, blocked) => request('messages', { method: 'POST', query: { action: 'block' }, body: { id, blocked } }),
+  // キャラクターとのおしゃべり（旅行者）
+  buddy: (body) => request('buddy', { method: 'POST', body }),
+  // 事業者
+  uploadPhoto,
+  bizPlaces: () => request('biz'),
+  bizPlace: (id) => request('biz', { query: { id } }),
+  bizBookings: () => request('biz', { query: { view: 'bookings' } }),
+  savePlace: (body, id) => request('biz', { method: 'PUT', query: { action: 'place', id }, body }),
+  bizCalendar: (id, from, days) => request('biz', { query: { view: 'calendar', id, from, days } }),
+  saveDay: (body) => request('biz', { method: 'PUT', query: { action: 'day' }, body }),
+  closures: (body) => request('biz', { method: 'PUT', query: { action: 'closures' }, body }),
+  deletePlace: (id) => request('biz', { method: 'POST', query: { action: 'delete' }, body: { id } }),
+  bizCancel: (body) => request('biz', { method: 'POST', query: { action: 'cancel' }, body }),
+};

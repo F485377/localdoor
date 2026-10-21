@@ -1,0 +1,135 @@
+/* キャラクター（写真の絵＋口とまぶた）の見た目と動き */
+.character.photo {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.character.photo .chr-body {
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: 559 / 658;
+  perspective: 700px;
+}
+.chr-figure {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 95%;
+  filter: drop-shadow(0 8px 10px rgba(20, 40, 30, 0.22));
+  animation: chr-sway 4.2s ease-in-out infinite;
+}
+.chr-figure img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.chr-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* 奥行きのある、ゆっくりした揺れ（立体っぽく見せる） */
+@keyframes chr-sway {
+  0%,
+  100% {
+    transform: rotateY(-9deg) rotateZ(-1.2deg) translateY(0);
+  }
+  50% {
+    transform: rotateY(9deg) rotateZ(1.2deg) translateY(-5px);
+  }
+}
+/* しゃべっている間は、はずむ */
+.character.photo.talking .chr-figure {
+  animation: chr-sway 4.2s ease-in-out infinite, chr-bounce 0.45s ease-in-out infinite;
+}
+@keyframes chr-bounce {
+  50% {
+    translate: 0 -3px;
+    scale: 1.01 0.99;
+  }
+}
+/* 口：ふだんは写真の大きな口。しゃべると 開く → 半開き → 閉じる → 半開き */
+.chr-mouth-half,
+.chr-mouth-closed,
+.chr-lids {
+  opacity: 0;
+}
+.character.photo.talking .chr-mouth-half {
+  animation: chr-talk-half 0.48s steps(1, end) infinite;
+}
+.character.photo.talking .chr-mouth-closed {
+  animation: chr-talk-closed 0.48s steps(1, end) infinite;
+}
+@keyframes chr-talk-half {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  50% { opacity: 0; }
+  75% { opacity: 1; }
+}
+@keyframes chr-talk-closed {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  75% { opacity: 0; }
+}
+/* まばたき */
+.chr-lids {
+  animation: chr-blink 4.6s steps(1, end) infinite;
+}
+@keyframes chr-blink {
+  0% { opacity: 0; }
+  95% { opacity: 1; }
+  97.5% { opacity: 0; }
+}
+/* 登場：ぽんっと飛び出す */
+.character.photo.birth .chr-body {
+  animation: chr-pop 0.9s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  transform-origin: 50% 100%;
+}
+@keyframes chr-pop {
+  from { transform: translateY(40px) scale(0.2); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+/* 顔だけ（隠れているときのボタン）：頭のあたり（横 95〜400・縦 0〜335）を切り出す */
+.character.photo.head-only {
+  align-items: center;
+}
+.chr-head-crop {
+  position: relative;
+  height: 100%;
+  aspect-ratio: 305 / 335;
+  overflow: hidden;
+}
+.chr-head-crop .chr-figure {
+  position: absolute;
+  left: -31.15%;
+  top: 0;
+  width: 183.3%;
+  height: auto;
+  aspect-ratio: 559 / 658;
+  animation: none;
+  filter: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chr-figure,
+  .character.photo.talking .chr-figure,
+  .character.photo.birth .chr-body,
+  .chr-lids {
+    animation: none;
+  }
+}
+/* 確認用：口とまぶたの状態を固定して見る */
+.force-half .chr-mouth-half,
+.force-closed .chr-mouth-closed,
+.force-blink .chr-lids {
+  opacity: 1 !important;
+  animation: none !important;
+}
+.force-still .chr-figure {
+  animation: none !important;
+}

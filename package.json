@@ -1,34 +1,27 @@
 {
-  "name": "haisai",
+  "name": "jimoto",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:full": "vercel dev",
     "build": "prisma generate && vite build",
     "preview": "vite preview",
     "postinstall": "prisma generate",
     "db:push": "dotenv -e .env.local -- node scripts/db-push.js",
-    "db:seed": "dotenv -e .env.local -- node prisma/seed.js",
-    "db:translate": "dotenv -e .env.local -- node scripts/add-translations.js",
     "db:studio": "dotenv -e .env.local -- prisma studio",
-    "build:demo": "node scripts/build-demo.js",
-    "osm:import": "dotenv -e .env.local -- node scripts/import-osm.js"
+    "ops": "dotenv -e .env.local -- node scripts/ops.js",
+    "test": "node --test test/*.test.js",
+    "dev:demo": "DB_SCHEMA=demo vite --port 5174",
+    "demo:push": "DB_SCHEMA=demo dotenv -e .env.local -- node scripts/db-push.js",
+    "demo:seed": "DB_SCHEMA=demo dotenv -e .env.local -- node scripts/demo-seed.js"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
-    "@vercel/blob": "^2.8.1",
-    "@vis.gl/react-google-maps": "^1.10.1",
-    "firebase": "^12.19.0",
-    "jose": "^6.2.12",
+    "@vercel/blob": "^2.8.2",
     "leaflet": "^1.9.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-leaflet": "^5.0.0",
-    "three": "^0.186.1",
-    "topojson-client": "^3.1.0",
-    "world-atlas": "^2.0.2"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.0",

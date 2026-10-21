@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>キャラクター動画</title>
+    <link rel="stylesheet" href="./character-live.css" />
+    <style>
+      html, body { margin: 0; width: 1280px; height: 720px; overflow: hidden; }
+      body { background: linear-gradient(180deg, #eaf4ff 0%, #fff8d9 100%); font-family: 'Kosugi Maru', sans-serif; }
+      .stage { display: flex; justify-content: space-around; align-items: flex-end; height: 600px; padding: 0 80px; }
+      .cell { width: 420px; height: 520px; }
+      .labels { display: flex; justify-content: space-around; padding: 0 80px; }
+      .labels span { width: 420px; text-align: center; font-size: 26px; color: #2c4d7a; font-weight: 700; }
+      .floor { position: absolute; left: 0; right: 0; top: 590px; height: 6px; background: #d6e5f7; }
+    </style>
+  </head>
+  <body>
+    <div class="floor"></div>
+    <div id="root"></div>
+    <script type="module">
+      import { createElement as h } from 'react';
+      import { createRoot } from 'react-dom/client';
+      import Character from './CharacterLive2.jsx';
+      createRoot(document.getElementById('root')).render(
+        h('div', null,
+          h('div', { className: 'stage', style: { paddingTop: 70 } },
+            h('div', { className: 'cell' }, h(Character, { skipBirth: true })),
+            h('div', { className: 'cell' }, h(Character, { skipBirth: true, talking: true })),
+          ),
+          h('div', { className: 'labels' }, h('span', null, 'ふだん'), h('span', null, 'しゃべっているとき')),
+        ),
+      );
+      window.ready = true;
+    </script>
+  </body>
+</html>

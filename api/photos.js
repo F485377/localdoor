@@ -1,57 +1,35 @@
-import { put } from '@vercel/blob';
-import { prisma } from '../lib/prisma.js';
-import { currentUser } from '../lib/auth.js';
-import { deviceKey } from '../lib/author.js';
-import { badRequest, methodNotAllowed, serverError } from '../lib/http.js';
-
-// POST /api/photos?reviewId=...&kind=food|interior
-// 本文は画像そのもの（image/jpeg など）。ブラウザ側で小さくしてから送る（Vercel の上限 4.5MB より小さく）。
-// 写真は口コミにつける。口コミを書いた本人（同じアカウントか同じ端末）しかつけられない。
-const KINDS = ['food', 'interior', 'other'];
-const TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
-const MAX_BYTES = 4 * 1024 * 1024;
+// /api/photos  事業者の写真のアップロード
+//   POST（本文は画像そのもの。Content-Type: image/jpeg | image/png | image/webp）→ { url }
+//   画面側で送る前に小さくしておく（src/photos.js）。保存したら店舗の情報で URL を使う
+import { throttle } from '../lib/auth.js';
+import { fail, requireUser, route } from '../lib/http.js';
+import { MAX_BYTES, TYPES, photosAvailable, savePhoto } from '../lib/photos.js';
 
 async function readBody(req) {
-  if (Buffer.isBuffer(req.body)) return req.body;
+  if (Buffer.isBuffer(req.body)) return req.body; // Vercel が読み込み済みのとき
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > MAX_BYTES) throw Object.assign(new Error('too large'), { status: 413 });
+    if (size > MAX_BYTES) fail(413, '写真が大きすぎます');
     chunks.push(chunk);
   }
   return Buffer.concat(chunks);
 }
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
-  try {
-    const type = String(req.headers['content-type'] ?? '').split(';')[0];
-    if (!TYPES[type]) return badRequest(res, 'Send a JPEG, PNG or WebP image');
-    const kind = KINDS.includes(req.query.kind) ? req.query.kind : 'other';
-
-    const review = await prisma.review.findUnique({ where: { id: String(req.query.reviewId ?? '') } });
-    if (!review) return res.status(404).json({ error: 'Review not found' });
-    const me = await currentUser(req);
-    const key = deviceKey(req);
-    const owner = (me && review.userId === me.uid) || (key && review.authorKey === key);
-    if (!owner) return res.status(403).json({ error: 'You can only add photos to your own review' });
-    if ((await prisma.photo.count({ where: { reviewId: review.id } })) >= 4) {
-      return badRequest(res, 'Up to 4 photos per review');
-    }
-
+export default route({
+  POST: async (req) => {
+    const user = await requireUser(req, 'BUSINESS');
+    if (!photosAvailable()) fail(503, '写真の保存先が設定されていません');
+    const type = String(req.headers['content-type'] ?? '').split(';')[0].trim();
+    if (!TYPES[type]) fail(415, 'JPEG・PNG・WebP の写真を選んでください');
+    if (!(await throttle(`photo:${user.id}`, 60, 60))) fail(429, '写真の送信が多すぎます。少し待ってからもう一度お試しください');
     const data = await readBody(req);
-    if (!data.length) return badRequest(res, 'Empty image');
-    const blob = await put(`places/${review.placeId}/${review.id}-${Date.now()}.${TYPES[type]}`, data, {
-      access: 'public',
-      contentType: type,
-    });
-    const photo = await prisma.photo.create({
-      data: { placeId: review.placeId, reviewId: review.id, kind, url: blob.url, pathname: blob.pathname },
-    });
-    res.status(201).json(photo);
-  } catch (err) {
-    if (err.status === 413) return res.status(413).json({ error: 'Image is too large (max 4MB)' });
-    serverError(res, err);
-  }
-}
+    if (!data.length) fail(400, '写真が空です');
+    if (data.length > MAX_BYTES) fail(413, '写真が大きすぎます');
+    return { url: await savePhoto(user, data, type) };
+  },
+});
+
+// 画像はそのまま読む（JSON として解析しない）
+export const config = { api: { bodyParser: false } };
