@@ -5623,3 +5623,180 @@ body {
 .push-light {
   animation: push-light 1.1s cubic-bezier(0.3, 0.6, 0.35, 1) 0.55s forwards;
 }
+
+/* 扉がこちらへ近づいてくる（奥行きのある空間で、手前へ） */
+.splash {
+  perspective: 900px;
+  perspective-origin: 50% 50%;
+}
+.splash-door {
+  transform-style: preserve-3d;
+  transition: transform 1.6s cubic-bezier(0.55, 0.05, 0.7, 0.2);
+}
+.splash.opening .splash-door::after {
+  content: none;
+}
+/* 近づく動きはアニメーションで（最初の画面の出てくる動きと重ならないように） */
+.splash.opening .splash-door {
+  transition: none;
+  animation: door-approach 1.6s cubic-bezier(0.55, 0.05, 0.7, 0.2) forwards;
+}
+@keyframes door-approach {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: var(--door-to);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash.opening .splash-door {
+    animation: none;
+  }
+}
+
+/* ---------- 扉の向こうに居酒屋・忍者は居酒屋の中に（2026-10-22 e） ---------- */
+/* 扉が開くと、向こうの居酒屋がそのまま見える（白い光はなし、きらきらは扉と一緒に） */
+.splash-room {
+  position: fixed;
+  z-index: 1;
+  animation: none;
+}
+.splash-door {
+  z-index: 2;
+}
+.door-logo .door-inside {
+  transition: opacity 0.6s ease;
+}
+.door-logo.open .door-inside {
+  opacity: 0;
+}
+.splash.lit::before {
+  animation: sparkle 1.3s ease-out 0s forwards;
+}
+.push-light {
+  display: none;
+}
+/* 居酒屋の画面：同じ写真がそのまま続く（出てくる動きなし） */
+.role-pick.izakaya .izakaya-photo {
+  animation: none;
+}
+/* 忍者は居酒屋の中に。写真の床に立つ */
+.ob-stage {
+  background: #f3e3c8;
+}
+.ob-room {
+  z-index: 0;
+  animation: none;
+}
+.ob-stage .ob-walker {
+  z-index: 1;
+  bottom: 2%;
+  height: 80%;
+}
+.ob-stage .smoke-bomb {
+  z-index: 2;
+}
+.splash.opening > .splash-room {
+  opacity: 1;
+  transition: none;
+}
+/* 質問はすぐに出す（扉はすばやく開く） */
+.door-logo .door-left,
+.door-logo .door-right {
+  transition: transform 0.5s cubic-bezier(0.45, 0, 0.25, 1);
+}
+.splash.lit::before {
+  animation-duration: 0.7s;
+}
+.role-pick,
+.role-pick > *,
+.role-pick .role-inner,
+.role-pick .role-inner > * {
+  animation: none;
+}
+.role-early {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.splash.opening > .role-early {
+  opacity: 1;
+  transition: none;
+  animation: none;
+}
+@media (min-width: 1000px) {
+  .role-early .role-inner {
+    max-width: 520px;
+  }
+}
+.splash.opening .splash-door {
+  animation-duration: 1s;
+}
+.role-early {
+  padding: 24px;
+  box-sizing: border-box;
+}
+/* 質問とボタンは扉のうしろ（居酒屋の写真の上、扉の下） */
+.splash-room {
+  z-index: 0;
+}
+.role-early {
+  z-index: 1;
+}
+.splash-door {
+  z-index: 2;
+}
+/* 煙は速く */
+.smoke-veil span {
+  animation-duration: 0.7s;
+}
+.smoke-veil span:nth-child(n) {
+  animation-delay: calc(var(--n, 0) * 0s);
+}
+.smoke-veil span:nth-child(1) { animation-delay: 0s; }
+.smoke-veil span:nth-child(2) { animation-delay: 0.04s; }
+.smoke-veil span:nth-child(3) { animation-delay: 0.06s; }
+.smoke-veil span:nth-child(4) { animation-delay: 0.1s; }
+.smoke-veil span:nth-child(5) { animation-delay: 0.12s; }
+.smoke-veil span:nth-child(6) { animation-delay: 0.15s; }
+.smoke-veil span:nth-child(7) { animation-delay: 0.17s; }
+.smoke-veil span:nth-child(8) { animation-delay: 0.19s; }
+.smoke-veil span:nth-child(9) { animation-delay: 0.2s; }
+.smoke-veil.clearing {
+  animation-duration: 1s;
+}
+/* ドロン：忍者は煙の中でふっと消える */
+.ob-walker.doron-out {
+  animation: doron-out 0.45s ease-in 0.3s forwards;
+}
+@keyframes doron-out {
+  to {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.85);
+  }
+}
+/* 画面をおおう煙は、ゆったり */
+.smoke-veil span {
+  animation-duration: 1.2s;
+}
+.smoke-veil span:nth-child(2) { animation-delay: 0.08s; }
+.smoke-veil span:nth-child(3) { animation-delay: 0.12s; }
+.smoke-veil span:nth-child(4) { animation-delay: 0.2s; }
+.smoke-veil span:nth-child(5) { animation-delay: 0.24s; }
+.smoke-veil span:nth-child(6) { animation-delay: 0.3s; }
+.smoke-veil span:nth-child(7) { animation-delay: 0.34s; }
+.smoke-veil span:nth-child(8) { animation-delay: 0.38s; }
+.smoke-veil span:nth-child(9) { animation-delay: 0.4s; }
+.smoke-veil.clearing {
+  animation-duration: 1.7s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ob-walker.doron-out {
+    animation: none;
+  }
+}

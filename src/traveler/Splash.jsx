@@ -10,13 +10,14 @@ import Onboarding from './Onboarding.jsx';
 //   ロゴ（閉じた格子の引き戸と「地元」のちょうちん）と、言語を選ぶボタン（1列）。サブタイトルは英語で出す。
 //   「はじめる」→ 扉がすぐに大きくなり、画面と同じ大きさになったところで引き戸が開いて光が広がる
 //   → そのまま地元の居酒屋に入ったていで、「旅行者」か「お店の方（事業者）」かを選ぶ（ロゴは出さない。壁は扉の中の灯りと同じ黄色）
-//   → 旅行者：店の奥（画面のまん中）へ進むと、奥ののれんの向こうに叢が見えてくる → 叢から忍者がドロン（ログインしていなければ最初の会話）／事業者：/biz
+//   扉が開くと、きらきらと一緒に向こうの居酒屋がそのまま見える
+//   → 旅行者：同じ居酒屋の中で、煙から忍者がドロン（ログインしていなければ最初の会話）／事業者：/biz
 //   最初の画面の文字は英語。ロゴと文字は、はじめにゆっくり順に出てくる
 const TAGLINE_EN = "Japan's hidden gems, without the language worry.";
 const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 // 扉が大きくなる時間・開く時間（styles.css の .door-grow / .door-lit と合わせる）
-const GROW_MS = 1600; // 扉が画面いっぱいになるまで
-const LIT_MS = 1700; // 大きくなった扉が横に開いて、光が広がるまで
+const GROW_MS = 1000; // 扉が画面いっぱいになるまで
+const LIT_MS = 550; // 扉が横に開いたら、すぐ質問を出す
 const CLOSE_MS = 1500; // 店の奥へ進む時間
 
 export default function Splash({ children }) {
@@ -41,7 +42,10 @@ export default function Splash({ children }) {
       const fw = (r.width * 228) / 340;
       const fh = (r.height * 240) / 280;
       const scale = Math.max(window.innerWidth / fw, window.innerHeight / fh) * 1.08;
-      setZoom({ transform: `translate(${window.innerWidth / 2 - cx}px, ${window.innerHeight / 2 - cy}px) scale(${scale})`, origin: `${cx - b.left}px ${cy - b.top}px` });
+      // 奥行きのある空間で、扉がこちらへ近づいてくる（近づくほど速く大きくなる）。PERSPECTIVE は styles.css の .splash の perspective と同じ
+      const PERSPECTIVE = 900;
+      const z = PERSPECTIVE * (1 - 1 / scale);
+      setZoom({ transform: `translate3d(${window.innerWidth / 2 - cx}px, ${window.innerHeight / 2 - cy}px, ${z}px)`, origin: `${cx - b.left}px ${cy - b.top}px` });
     }
     setStep('grow');
   };
@@ -68,37 +72,44 @@ export default function Splash({ children }) {
 
   if (step === 'traveler') return children;
   if (step === 'talk') return <Onboarding onDone={() => setStep('traveler')} fromDoor />;
+  // 質問とボタン（扉が開き始めたら、もう出しておく）
+  const roleInner = (
+    <div className="role-inner">
+      <h1 className="center role-title">{t('role.title')}</h1>
+      <button type="button" className="role-btn primary" onClick={() => setStep(user ? 'traveler' : 'talk')} autoFocus>
+        <b>{t('role.traveler')}</b>
+        <span>{t('role.travelerSub')}</span>
+      </button>
+      <button type="button" className="role-btn" onClick={() => navigate('/biz?welcome=1')} lang="ja">
+        <b>{t('role.business')}</b>
+        <span>
+          日本語だけで店舗を登録し、予約を受けられます
+          {/* 日本語の表示では同じ意味の文が2回になるので、ほかの言語のときだけ訳を添える */}
+          {lang !== 'ja' && (
+            <>
+              <br />
+              {t('role.businessSub')}
+            </>
+          )}
+        </span>
+      </button>
+    </div>
+  );
   if (step === 'role' || step === 'closing') {
     return (
       <div className={`role-pick izakaya${step === 'closing' ? ' leaving' : ''}`} role="dialog" aria-modal="true" aria-label={t('role.title')}>
         <img className="izakaya-photo" src="/scene/izakaya.webp" alt="" aria-hidden="true" draggable="false" />
-        <div className="role-inner">
-          <h1 className="center role-title">{t('role.title')}</h1>
-          <button type="button" className="role-btn primary" onClick={() => setStep(reduced() ? (user ? 'traveler' : 'talk') : 'closing')} autoFocus>
-            <b>{t('role.traveler')}</b>
-            <span>{t('role.travelerSub')}</span>
-          </button>
-          <button type="button" className="role-btn" onClick={() => navigate('/biz?welcome=1')} lang="ja">
-            <b>{t('role.business')}</b>
-            <span>
-              日本語だけで店舗を登録し、予約を受けられます
-              {/* 日本語の表示では同じ意味の文が2回になるので、ほかの言語のときだけ訳を添える */}
-              {lang !== 'ja' && (
-                <>
-                  <br />
-                  {t('role.businessSub')}
-                </>
-              )}
-            </span>
-          </button>
-        </div>
+        {roleInner}
       </div>
     );
   }
   return (
     <div className={`splash${step !== 'logo' ? ' opening' : ''}${step === 'lit' ? ' lit' : ''}`}>
-      {step === 'lit' && <span className="push-light" aria-hidden="true" />}
-      <div className="splash-door" ref={doorRef} style={zoom && step !== 'logo' ? { transform: zoom.transform, transformOrigin: zoom.origin } : undefined}>
+      {/* 扉の向こうの居酒屋：扉が画面いっぱいになったら後ろに置いておき、開くとそのまま見える */}
+      {step === 'lit' && <img className="izakaya-photo splash-room" src="/scene/izakaya.webp" alt="" aria-hidden="true" draggable="false" />}
+      {/* 質問とボタンは扉のうしろに置いておき、扉が開くとすぐ見える */}
+      {step === 'lit' && <div className="role-early">{roleInner}</div>}
+      <div className="splash-door" ref={doorRef} style={zoom && step !== 'logo' ? { '--door-to': zoom.transform, transformOrigin: zoom.origin } : undefined}>
         <DoorLogo open={step === 'lit'} />
       </div>
       <span className="splash-logo">

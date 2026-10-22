@@ -4,11 +4,10 @@ import Character from '../components/Character.jsx';
 import { useCurrency } from '../currency.jsx';
 import { useI18n } from '../i18n/index.jsx';
 import { navigate } from '../router.jsx';
-import { OutsideLight } from './Splash.jsx';
 
 // 旅行者の最初の会話（ログインしていなければ毎回）。
 //   画面の上3分の2がキャラクター、下3分の1が言葉と選択肢。
-//   忍者のリュウが、叢（くさむら）から煙玉でドロンと出てきて、「こんにちは！」→ 自己紹介 → なぜいるのか → タップすれば話せること を話す。
+//   忍者のリュウが、居酒屋の中で煙の中からドロンと出てきて、「こんにちは！」→ 自己紹介 → なぜいるのか → タップすれば話せること を話す。
 //   そのあと 通貨 → アカウント作成のおすすめ（作る／もう持っている）。言語は最初の画面で選ぶので、ここでは聞かない。どこでも「あとで」で飛ばせる
 //   しゃべっている間は、ポーズを変える（手を合わせる・構える）。出てくるときは跳んで出てくる
 const WALK_MS = 1400; // 草がゆれて、煙玉でドロン（この間は「walk」）
@@ -28,9 +27,9 @@ export default function Onboarding({ onDone, fromDoor = false }) {
     return () => clearTimeout(timer);
   }, [step]);
 
-  const [leaving, setLeaving] = useState(false);
   // 煙は出しきったら消す（残すと、ぼかしの跡が残ることがある）
   const [smoke, setSmoke] = useState(true);
+  const [vanish, setVanish] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setSmoke(false), 2200);
     return () => clearTimeout(timer);
@@ -41,12 +40,13 @@ export default function Onboarding({ onDone, fromDoor = false }) {
     setCurrency(currency);
     const done = () => {
       onDone();
-      if (to) navigate(to);
+      if (to) navigate(to, { smoke: false });
     };
-    // 忍者が右下へ飛んでいって、右下のボタンになる
+    // ドロン：忍者のまわりに煙がのぼって忍者が消えたら、そのまま地図（最初の検索）かアカウントの画面へ（画面をおおう煙はなし）
     if (reduced()) return done();
-    setLeaving(true);
-    setTimeout(done, 900);
+    setVanish(true);
+    setSmoke(true);
+    setTimeout(done, 1000);
   };
 
   const LINES = { hello: t('ob.hello'), me: t('ob.me'), why: t('ob.why'), tapMe: t('ob.tapMe'), cur: t('ob.cur'), account: t('ob.account') };
@@ -58,14 +58,13 @@ export default function Onboarding({ onDone, fromDoor = false }) {
   return (
     <div className="ob" role="dialog" aria-modal="true" aria-label={t('ob.hello')}>
       <div className="ob-stage" onClick={() => NEXT[step] && setStep(NEXT[step])}>
-        <div className={`ob-walker${leaving ? ' to-corner' : ''}`}>
+        <img className="izakaya-photo ob-room" src="/scene/izakaya.webp" alt="" aria-hidden="true" draggable="false" />
+        <div className={`ob-walker${vanish ? ' doron-out' : ''}`}>
           <div className="ob-steps">
             <Character skipBirth={reduced()} talking={talking && NEXT[step] !== undefined} stance={STANCE[step]} />
           </div>
         </div>
-        <Thicket rustle={step === 'walk'} />
-        {!reduced() && smoke && <SmokeBomb />}
-        {fromDoor && <OutsideLight />}
+        {!reduced() && smoke && <SmokeBomb key={vanish ? 'out' : 'in'} />}
       </div>
 
       <div className="ob-talk">
@@ -146,29 +145,6 @@ function SmokeBomb() {
         <circle cx="140" cy="390" r="80" fill="url(#smk-fill)" />
         <circle cx="270" cy="395" r="84" fill="url(#smk-fill)" />
       </g>
-    </svg>
-  );
-}
-
-// 叢（くさむら）。ふつうの草の絵。忍者の足元を隠す。登場のときだけガサガサゆれる
-const BLADES = Array.from({ length: 26 }, (_, i) => {
-  const x = 2 + i * 3.8 + ((i * 37) % 7) * 0.35;
-  const h = 18 + ((i * 53) % 13);
-  const bend = ((i * 29) % 9) - 4;
-  return { x, h, bend, c: ['#5e9152', '#4c7e44', '#77a866', '#6a9a5a'][i % 4], d: (i % 5) * 0.05 };
-});
-function Thicket({ rustle }) {
-  return (
-    <svg className={`ob-thicket${rustle ? ' rustle' : ''}`} viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true">
-      <rect x="0" y="29" width="100" height="5" fill="#7fae6f" />
-      {BLADES.map((b) => (
-        <path
-          key={b.x}
-          d={`M${b.x - 2.4} 34 Q${b.x - 1 + b.bend * 0.3} ${34 - b.h * 0.6} ${b.x + b.bend} ${34 - b.h} Q${b.x + 1 + b.bend * 0.3} ${34 - b.h * 0.5} ${b.x + 2.4} 34 Z`}
-          fill={b.c}
-          style={{ transformOrigin: `${b.x}px 34px`, animationDelay: `${b.d}s` }}
-        />
-      ))}
     </svg>
   );
 }

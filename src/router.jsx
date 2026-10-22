@@ -11,8 +11,9 @@ function go(to, replace) {
 
 // アカウント登録・ログインの画面へ移るときは、忍者の煙をゆったり出してから移る（動きを減らす設定ではすぐ移る）
 const SMOKE_TO = /^\/(biz\/)?(register|login)(\?|$)/;
-const SMOKE_IN_MS = 1900;
-function smokeThen(fn) {
+const SMOKE_IN_MS = 1100;
+// 煙をすばやく出して、煙の中で画面を切りかえ、煙が晴れると次の画面が見える
+export function smokeThen(fn) {
   const veil = document.createElement('div');
   veil.className = 'smoke-veil';
   veil.setAttribute('aria-hidden', 'true');
@@ -22,13 +23,13 @@ function smokeThen(fn) {
     fn();
     veil.classList.add('clearing');
   }, SMOKE_IN_MS);
-  setTimeout(() => veil.remove(), SMOKE_IN_MS + 2400);
+  setTimeout(() => veil.remove(), SMOKE_IN_MS + 2000);
 }
 
-export function navigate(to, { replace = false } = {}) {
+export function navigate(to, { replace = false, smoke = true } = {}) {
   if (to === location.pathname + location.search) return;
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  if (SMOKE_TO.test(to) && !SMOKE_TO.test(location.pathname) && !reduce) return smokeThen(() => go(to, replace));
+  if (smoke && SMOKE_TO.test(to) && !SMOKE_TO.test(location.pathname) && !reduce) return smokeThen(() => go(to, replace));
   go(to, replace);
 }
 
