@@ -92,7 +92,7 @@ export default function Home() {
       </button>
       {geoError && <p className="notice small">{t('home.nearFail')}</p>}
 
-      <div className="row" style={{ marginTop: 8 }}>
+      <div className="row when-who" style={{ marginTop: 8 }}>
         <label className="field">
           <span className="section-title" style={{ display: 'block', margin: '20px 0 10px' }}>
             {t('home.when')}

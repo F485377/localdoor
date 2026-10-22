@@ -14,6 +14,7 @@ import BizChats, { BlockButton } from './BizChats.jsx';
 import PlaceEditor from './PlaceEditor.jsx';
 import PlaceList from './PlaceList.jsx';
 import { BizWelcome } from './BizGuide.jsx';
+import NotifyGate from './NotifyGate.jsx';
 import BizTour, { savedTour } from './BizTour.jsx';
 import { armSound, chime, soundWanted } from './sound.js';
 
@@ -104,7 +105,16 @@ export default function BizApp() {
       <header className="topbar">
         <div className="topbar-inner">
           <Link to="/biz" className="logo">
-            Local<span>Door</span> <small className="muted" style={{ fontWeight: 600, fontSize: '0.8rem' }}>事業者</small>
+            Local<span>Door</span>
+            <span className="logo-ninja" aria-hidden="true">
+              <span className="logo-throw" style={{ '--n': 0 }}><svg className="logo-item" viewBox="0 0 24 24"><circle cx="11" cy="14" r="8" fill="#2a2d31" /><circle cx="8.5" cy="11.5" r="2.2" fill="#ffffff" opacity="0.25" /><path d="M15 8 Q17 4 20 4" stroke="#8a5a2a" strokeWidth="1.8" fill="none" /><circle className="fuse" cx="20.5" cy="3.5" r="2" fill="#ffb02e" /></svg></span>
+              <span className="logo-throw" style={{ '--n': 1 }}><svg className="logo-item" viewBox="0 0 24 24"><ellipse cx="12" cy="16" rx="9" ry="4.5" fill="#fbf7ea" stroke="#d9d2bf" strokeWidth="1" /><path d="M3.5 13 Q12 5 20.5 13 Q12 11 3.5 13 Z" fill="#f2724f" /><path d="M7 11.5 L9 9.5 M11 10.5 L13 8.5 M15 11 L17 9.5" stroke="#ffd0bf" strokeWidth="1.2" /><rect x="10.5" y="11.5" width="3" height="9" fill="#26332a" /></svg></span>
+              <span className="logo-throw" style={{ '--n': 2 }}><svg className="logo-item" viewBox="0 0 24 24"><circle cx="11" cy="14" r="8" fill="#2a2d31" /><circle cx="8.5" cy="11.5" r="2.2" fill="#ffffff" opacity="0.25" /><path d="M15 8 Q17 4 20 4" stroke="#8a5a2a" strokeWidth="1.8" fill="none" /><circle className="fuse" cx="20.5" cy="3.5" r="2" fill="#ffb02e" /></svg></span>
+              <span className="logo-throw" style={{ '--n': 3 }}><svg className="logo-item" viewBox="0 0 24 24"><path d="M2 11 H22 Q21 21 12 21 Q3 21 2 11 Z" fill="#d8452f" /><path d="M2 11 H22" stroke="#9a2a1a" strokeWidth="1.5" /><path d="M5 10 Q8 7 10 10 M10 10 Q13 7 15 10" stroke="#f2c14e" strokeWidth="1.6" fill="none" /><circle cx="17" cy="9" r="2.4" fill="#fff" /><circle cx="17" cy="9" r="1.1" fill="#f2b02e" /><path d="M14 2 L19 9 M17 2 L21 8" stroke="#8a5a2a" strokeWidth="1.3" /></svg></span>
+              <span className="logo-throw" style={{ '--n': 4 }}><svg className="logo-item" viewBox="0 0 24 24"><circle cx="11" cy="14" r="8" fill="#2a2d31" /><circle cx="8.5" cy="11.5" r="2.2" fill="#ffffff" opacity="0.25" /><path d="M15 8 Q17 4 20 4" stroke="#8a5a2a" strokeWidth="1.8" fill="none" /><circle className="fuse" cx="20.5" cy="3.5" r="2" fill="#ffb02e" /></svg></span>
+              <span className="logo-throw" style={{ '--n': 5 }}><svg className="logo-item" viewBox="0 0 24 24"><ellipse cx="12" cy="18" rx="10" ry="3.5" fill="#e6c98f" /><circle cx="7" cy="14" r="4" fill="#c47a32" /><circle cx="12.5" cy="12.5" r="4.2" fill="#b86a28" /><circle cx="17.5" cy="14.5" r="3.8" fill="#c47a32" /><path d="M4 12.5 Q7 11 10 13 M9.5 11 Q12.5 9 15.5 11.5 M15 13 Q17.5 12 20.5 13.5" stroke="#5a2e12" strokeWidth="1.2" fill="none" /><circle cx="8" cy="12.5" r="0.7" fill="#5aa64a" /><circle cx="13" cy="10.8" r="0.7" fill="#5aa64a" /><circle cx="18" cy="13" r="0.7" fill="#5aa64a" /></svg></span>
+              <span className="logo-throw" style={{ '--n': 6 }}><svg className="logo-item" viewBox="0 0 24 24"><circle cx="11" cy="14" r="8" fill="#2a2d31" /><circle cx="8.5" cy="11.5" r="2.2" fill="#ffffff" opacity="0.25" /><path d="M15 8 Q17 4 20 4" stroke="#8a5a2a" strokeWidth="1.8" fill="none" /><circle className="fuse" cx="20.5" cy="3.5" r="2" fill="#ffb02e" /></svg></span>
+            </span> <small className="muted" style={{ fontWeight: 600, fontSize: '0.8rem' }}>事業者</small>
           </Link>
           <span className="spacer" />
           <button className="menu-btn" onClick={() => setMenuOpen(true)} aria-label="メニュー" aria-haspopup="dialog">
@@ -126,6 +136,8 @@ export default function BizApp() {
         </nav>
       )}
       {menuOpen && <BizMenu loggedIn={loggedIn} onClose={() => setMenuOpen(false)} onGuide={() => (setMenuOpen(false), startTour())} onLogout={async () => (setMenuOpen(false), await logout(), navigate('/biz'))} />}
+      {/* 通知がオンになるまで、事業者の画面は使えない */}
+      {loggedIn && !publicPage && <NotifyGate />}
       {help === 'welcome' && <BizWelcome onGuide={startTour} onClose={() => setHelp(null)} />}
       {help === 'guide' && <BizTour key={tourStart} start={tourStart} onClose={() => setHelp(null)} />}
     </div>

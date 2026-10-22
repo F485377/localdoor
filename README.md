@@ -57,7 +57,7 @@ npm run demo:seed   # 中身を消して、架空の店を300店入れ直す
 npm run dev:demo    # demo スキーマを使う開発サーバー（http://localhost:5174）
 ```
 
-デモの店の事業者アカウントは `demo-shop-001@example.com`〜`demo-shop-300@example.com`、パスワードは `demo-password`（`DEMO_PASSWORD` で変えられる）。
+デモの店の事業者アカウントのパスワードは、`.env.local` の `DEMO_PASSWORD`（16文字以上のランダムな値。リポジトリには入れない）。シードは `DEMO_PASSWORD` がないと動かない。データを消さずにパスワードだけ入れ替えるときは `npm run demo:password`（ログイン中の状態も切る）。
 
 ### 都道府県・市区町村のデータ
 

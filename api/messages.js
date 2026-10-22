@@ -5,6 +5,8 @@
 //   GET ?travelerId=&shop= 事業者：その店舗を予約したお客様とのスレッド（なければ thread: null）
 //   POST { id?, placeId?, travelerId?, text }   送る。旅行者は placeId、事業者は placeId（自分の店舗）と予約したお客様の travelerId で新しく始められる
 //   POST ?action=block { id, blocked } 事業者：相手をブロック／解除
+import { later } from '../lib/later.js';
+import { notifyBusiness, remindUnreplied } from '../lib/notify.js';
 import { MAX_MESSAGE } from '../lib/domain.js';
 import { body, fail, requireUser, route, str } from '../lib/http.js';
 import { throttle } from '../lib/auth.js';
@@ -144,6 +146,21 @@ async function send(req, user) {
     where: { id: thread.id },
     data: isBiz ? { lastMessageAt: now, lastBizAt: now, bizReadAt: now } : { lastMessageAt: now, lastTravelerAt: now, travelerReadAt: now },
   });
+  // お客様からのメッセージは、事業者にすぐ知らせ、2分たっても返信がなければもう一度知らせる
+  if (!isBiz) {
+    const place = thread.place ?? (await prisma.place.findUnique({ where: { id: thread.placeId } }));
+    later(
+      (async () => {
+        await notifyBusiness(place.ownerId, {
+          title: `${user.name} 様からメッセージ`,
+          body: `${place.name}：${(translated ?? text).slice(0, 80)}`,
+          path: `/biz/chats/${thread.id}`,
+          tag: `chat-${thread.id}`,
+        });
+        await remindUnreplied(thread.id, now);
+      })(),
+    );
+  }
   return { threadId: thread.id, message: messageView(message, isBiz, user.lang) };
 }
 

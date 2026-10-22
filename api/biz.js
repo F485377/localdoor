@@ -9,6 +9,7 @@
 //                               mark は旅行者に見せる印：'auto' 空きに合わせる・'o' 〇・'limited' △・'x' ✕（受付停止）・'none' ー（未定）。定員 0 はその枠だけ止める
 //   POST ?action=cancel         予約のキャンセル { id, reason, note }
 //   POST ?action=delete         店舗を削除 { id }（これからの予約があると削除できない。行は残して見えなくする）
+import { notifyBusiness, pushPublicKey, saveSubscription } from '../lib/notify.js';
 import {
   BOOK_AHEAD_DAYS, CANCEL_REASONS, DAY_MARKS, FOUNDED_MIN, MAX_MENU, PAYMENT_METHODS, genreFits, CATEGORIES, MAX_CAPACITY, DIET_SUPPORT, TRANSLATE_LANGS, LOCAL_PCTS, MAX_DESCRIPTION, MAX_PHOTOS, MENU_STYLES, PAYMENTS, PETS, PRICE_BANDS, SMOKING, YEARS,
   addDays, dayMark, isPast, jstDate, missingFields, normalizeSlots, safeUrl, weekday,
@@ -317,6 +318,7 @@ export default route({
     const user = await requireUser(req, 'BUSINESS');
     if (req.query.view === 'bookings') return bookings(user);
     if (req.query.view === 'calendar') return calendar(user, req.query);
+    if (req.query.view === 'push') return { key: pushPublicKey(), count: await prisma.pushSub.count({ where: { userId: user.id } }) };
     return req.query.id ? load(user, req.query.id) : list(user);
   },
   PUT: async (req) => {
@@ -330,6 +332,13 @@ export default route({
     const user = await requireUser(req, 'BUSINESS');
     if (req.query.action === 'cancel') return cancel(req, user);
     if (req.query.action === 'delete') return removePlace(req, user);
+    // 通知の宛先を覚える。test=true なら、ためしに1通送る
+    if (req.query.action === 'push') {
+      const b = body(req);
+      if (b.subscription && !(await saveSubscription(user.id, b.subscription))) fail(400, '通知の登録に失敗しました');
+      if (b.test) await notifyBusiness(user.id, { title: '通知がオンになりました', body: '新しい予約やメッセージが来ると、このように知らせます。', path: '/biz', tag: 'test', email: false });
+      return { ok: true };
+    }
     return fail(400, 'Unknown action');
   },
 });

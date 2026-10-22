@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { MAX_REVIEW, MAX_REVIEW_PEOPLE, OCCASIONS, RELIGIONS, WITH_WHOM } from '../../lib/domain.js';
 import { api } from '../api.js';
-import { Gloss } from '../glossary.jsx';
 import { useI18n } from '../i18n/index.jsx';
 import { label } from '../labels.js';
 import { Link } from '../router.jsx';
@@ -10,7 +9,7 @@ import { Back, Chips, ErrorNote, Sheet, Spinner, useLoad } from '../ui.jsx';
 import { Stars } from './bits.jsx';
 import { Donut } from '../components/Charts.jsx';
 
-// 口コミ（/p/:id/reviews）：お店の総評（評点の平均・星ごとの件数・来店シーン・利用シーン・雰囲気・地元のお客さんの割合）と口コミの一覧。
+// 口コミ（/p/:id/reviews）：お店の総評（評点の平均・星ごとの件数・来店シーン・利用シーン・雰囲気・地元のお客さんの割合）。一人ひとりの口コミは出さない。
 // 投稿もこの画面から（そのお店を予約して来店した旅行者だけ）
 const COLORS = ['#e88ea0', '#e8a317', '#5aa469', '#6f95cf', '#b48ead', '#bdbdbd'];
 
@@ -20,13 +19,11 @@ export default function Reviews({ id }) {
   const place = useLoad(() => api.place(id, lang), [id, lang]);
   const { data, error, loading, reload } = useLoad(() => api.reviews(id, lang), [id, lang, user?.id]);
   const [writing, setWriting] = useState(false);
-  const [filter, setFilter] = useState('all');
   const [posted, setPosted] = useState(false);
   if ((loading && !data) || (place.loading && !place.data)) return <Spinner kind="rows" />;
   if (error) return <ErrorNote error={error} onRetry={reload} />;
 
-  const { summary: s, reviews, mine, canWrite } = data;
-  const shown = filter === 'all' ? reviews : reviews.filter((r) => r.withWhom === filter);
+  const { summary: s, mine, canWrite } = data;
 
   return (
     <>
@@ -96,24 +93,7 @@ export default function Reviews({ id }) {
         )}
       </section>
 
-      <h2>{t('rv.title')}</h2>
-      {reviews.length > 0 && (
-        <div className="chips" role="group" aria-label={t('rv.withWhom')} style={{ marginBottom: 10 }}>
-          <button type="button" className={filter === 'all' ? 'chip on' : 'chip'} onClick={() => setFilter('all')}>
-            {t('rv.all')} ({reviews.length})
-          </button>
-          {WITH_WHOM.filter((k) => s.withWhom[k]).map((k) => (
-            <button key={k} type="button" className={filter === k ? 'chip on' : 'chip'} onClick={() => setFilter(k)}>
-              {label('withWhom', k, lang)} ({s.withWhom[k]})
-            </button>
-          ))}
-        </div>
-      )}
-      {!reviews.length && <p className="empty">{t('rv.none')}</p>}
-      {shown.map((r) => (
-        <ReviewCard key={r.id} r={r} />
-      ))}
-
+      {/* 一人ひとりの口コミは出さない（星の集計と、誰と・シーンのグラフだけ） */}
       <ReviewForm
         open={writing}
         placeId={id}
@@ -130,43 +110,7 @@ export default function Reviews({ id }) {
   );
 }
 
-function ReviewCard({ r }) {
-  const { t, lang, locale } = useI18n();
-  const [original, setOriginal] = useState(false);
-  const tags = [label('withWhom', r.withWhom, lang), t('rv.peopleN', { n: r.people }), r.occasion && label('occasion', r.occasion, lang), r.religion && t('rv.religionTag', { r: label('religion', r.religion, lang) })].filter(Boolean);
-  return (
-    <article className={`rv-card${r.mine ? ' mine' : ''}`}>
-      <div className="status-line">
-        <Stars value={r.rating} />
-        <b>{r.author ?? '—'}</b>
-        {r.mine && <span className="badge ok">{t('rv.mine')}</span>}
-        {r.sample && <span className="badge sample">{t('sample')}</span>}
-        <span className="small muted" style={{ marginLeft: 'auto' }}>
-          {new Date(r.createdAt).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' })}
-        </span>
-      </div>
-      <div className="rv-tags">
-        {tags.map((x) => (
-          <span key={x} className="icon-tag">
-            {x}
-          </span>
-        ))}
-      </div>
-      {r.comment && (
-        <p className="desc" style={{ margin: '6px 0 0' }}>
-          <Gloss text={original ? r.original : r.comment} />
-        </p>
-      )}
-      {r.translated && (
-        <button type="button" className="link small muted" onClick={() => setOriginal(!original)}>
-          {original ? t('rv.translated') : t('rv.showOriginal')}
-        </button>
-      )}
-    </article>
-  );
-}
-
-function DonutLegend({ counts, group }) {
+export function DonutLegend({ counts, group }) {
   const { t, lang } = useI18n();
   const parts = Object.entries(counts)
     .filter(([, n]) => n > 0)
@@ -177,7 +121,7 @@ function DonutLegend({ counts, group }) {
 }
 
 // 横棒（利用シーン）
-function Bars({ counts, group }) {
+export function Bars({ counts, group }) {
   const { t, lang } = useI18n();
   const rows = Object.entries(counts)
     .filter(([, n]) => n > 0)
@@ -200,7 +144,7 @@ function Bars({ counts, group }) {
 }
 
 // 雰囲気：左右の言葉のあいだの、どのあたりか（1〜5 の平均）
-function Scale({ left, right, value }) {
+export function Scale({ left, right, value }) {
   const { t } = useI18n();
   return (
     <div className="rv-scale">

@@ -1,3 +1,4 @@
+import { Bars, DonutLegend, Scale } from './Reviews.jsx';
 import { dishPhoto, frontPhoto } from '../stockPhotos.js';
 import { useState } from 'react';
 import { REPORT_REASONS, dayMark, jstDate, slotLabel } from '../../lib/domain.js';
@@ -46,23 +47,15 @@ function ReviewsSection({ placeId }) {
               ))}
             </div>
           </div>
-          {data.reviews
-            .filter((r) => r.comment)
-            .slice(0, 3)
-            .map((r) => (
-              <div key={r.id} className="rv-mini-card">
-                <div className="status-line">
-                  <Stars value={r.rating} />
-                  <b className="small">{r.author ?? '—'}</b>
-                  <span className="small muted">
-                    {label('withWhom', r.withWhom, lang)} · {t('rv.peopleN', { n: r.people })}
-                  </span>
-                </div>
-                <p className="small" style={{ margin: '6px 0 0' }}>
-                  <Gloss text={r.comment.length > 120 ? `${r.comment.slice(0, 120)}…` : r.comment} />
-                </p>
-              </div>
-            ))}
+          {/* 一人ひとりの口コミは出さず、誰と来たか・利用シーンのグラフと、お店の雰囲気を出す */}
+          <h3 className="rv-mini-h">{t('rv.withChart')}</h3>
+          <DonutLegend counts={s.withWhom} group="withWhom" />
+          {s.people != null && <p className="small muted">{t('rv.avgPeople', { n: s.people })}</p>}
+          <h3 className="rv-mini-h">{t('rv.occasionChart')}</h3>
+          <Bars counts={s.occasion} group="occasion" />
+          <h3 className="rv-mini-h">{t('rv.atmosphere')}</h3>
+          <Scale left={t('rv.lively')} right={t('rv.calm')} value={s.calm} />
+          <Scale left={t('rv.everyday')} right={t('rv.special')} value={s.special} />
         </>
       ) : (
         <p className="muted small" style={{ margin: 0 }}>

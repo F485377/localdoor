@@ -4,7 +4,7 @@
 //   npm run dev:demo    … demo スキーマを使う開発サーバー（http://localhost:5174）
 // 店はすべて架空で、sample = true（画面に「サンプル」と出る）。写真はなく、カテゴリに合ったイラストを出す。
 // 名前・説明などは、ひな形を組み合わせて 日本語・英語・簡体字・繁体字・韓国語 で作る（翻訳 API は使わない）。
-// 事業者のアカウントは demo-shop-001@example.com 〜、パスワードは DEMO_PASSWORD（既定 demo-password）
+// 事業者のアカウントは demo-shop-001@example.com 〜、パスワードは DEMO_PASSWORD（.env.local に入れる。既定の値はない）
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../lib/auth.js';
 import { cities } from '../lib/cities.js';
@@ -13,6 +13,10 @@ import { PREFS } from '../lib/japan.js';
 
 if (DB_SCHEMA !== 'demo') {
   console.error(`デモの店は demo スキーマにだけ入れます（今は "${DB_SCHEMA}"）。DB_SCHEMA=demo で実行してください。`);
+  process.exit(1);
+}
+if (!process.env.DEMO_PASSWORD || process.env.DEMO_PASSWORD.length < 16) {
+  console.error('DEMO_PASSWORD（16文字以上のランダムな値）を .env.local に入れてから実行してください。');
   process.exit(1);
 }
 const COUNT = Number(process.argv[2]) || 300;
@@ -256,7 +260,7 @@ async function main() {
   for (const table of ['PlaceView', 'Report', 'Message', 'Thread', 'Booking', 'Closure', 'Place', 'PasswordReset', 'Session', 'Throttle', 'User']) {
     await prisma.$executeRawUnsafe(`TRUNCATE "demo"."${table}" CASCADE`);
   }
-  const passwordHash = await hashPassword(process.env.DEMO_PASSWORD || 'demo-password');
+  const passwordHash = await hashPassword(process.env.DEMO_PASSWORD);
   const chosen = chooseCities(COUNT);
   const now = Date.now();
   for (let i = 0; i < chosen.length; i++) {

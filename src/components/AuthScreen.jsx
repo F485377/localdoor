@@ -123,7 +123,7 @@ export default function AuthScreen({ mode, lang, role = 'TRAVELER', base = '', n
   };
 
   return (
-    <div className="card" style={{ maxWidth: 440, margin: '8px auto' }}>
+    <div className="card auth-emaki" style={{ maxWidth: 440, margin: '8px auto' }}>
       <h1>{t(mode)}</h1>
       {(mode === 'login' || mode === 'register') && <p className="muted small">{t('why')}</p>}
       {sent ? (

@@ -36,6 +36,7 @@ model User {
   places   Place[]
   bookings Booking[]
   threads  Thread[]
+  pushSubs PushSub[]
   saved    SavedPlace[]
   reviews  Review[]
 
@@ -268,6 +269,19 @@ model Message {
   createdAt  DateTime @default(now())
 
   @@index([threadId, createdAt])
+}
+
+// 事業者のスマホ・パソコンへのプッシュ通知の宛先（ブラウザごと）
+model PushSub {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // ───────────── 運営 ─────────────

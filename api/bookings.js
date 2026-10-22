@@ -8,6 +8,8 @@ import { ALL_DIETS, MAX_FUTURE_BOOKINGS, MAX_MESSAGE, MAX_PARTY, isPast, jstDate
 import { DATE_RE, TIME_RE, body, fail, int, listOf, requireUser, route, str } from '../lib/http.js';
 import { travelerPlace } from '../lib/places.js';
 import { prisma } from '../lib/prisma.js';
+import { later } from '../lib/later.js';
+import { notifyBusiness } from '../lib/notify.js';
 import { translateText } from '../lib/translate.js';
 
 import { VISIBLE } from '../lib/places.js';
@@ -83,6 +85,15 @@ async function create(req) {
     },
     { maxWait: 10000, timeout: 15000 },
   );
+  // 事業者にプッシュで知らせる
+  later(
+    notifyBusiness(booking.place.ownerId, {
+      title: '新しい予約が入りました',
+      body: `${booking.place.name}：${date} ${time}〜 ${partySize}名（${user.name} 様）`,
+      path: '/biz',
+      tag: `booking-${booking.id}`,
+    }),
+  );
   return { booking: bookingView(booking, user.lang) };
 }
 
@@ -98,6 +109,14 @@ async function cancel(req) {
     data: { status: 'CANCELLED_BY_TRAVELER', cancelledAt: new Date(), bizSeenAt: null }, // 事業者の画面に新着として出す
     include: { place: true },
   });
+  later(
+    notifyBusiness(updated.place.ownerId, {
+      title: '予約がキャンセルされました',
+      body: `${updated.place.name}：${updated.date} ${updated.time}〜 ${updated.partySize}名（${user.name} 様）`,
+      path: '/biz',
+      tag: `booking-${updated.id}`,
+    }),
+  );
   return { booking: bookingView(updated, user.lang) };
 }
 

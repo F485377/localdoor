@@ -9,6 +9,7 @@ import { store } from '../store.js';
 import { Back, Chips, ErrorNote, Spinner, formatDate, shortDate, useLoad } from '../ui.jsx';
 import { Band, lastSearch, paymentsText } from './bits.jsx';
 import Manners from './Manners.jsx';
+import { NinjaBody } from '../components/Ninja.jsx';
 
 const WINDOW = 35; // カレンダーに一度に出す日数（5週間）
 const MARK = { o: '〇', limited: '△', x: '✕', none: 'ー' }; // ー ＝ 日程がまだ決まっていない
@@ -244,8 +245,46 @@ export default function BookingFlow({ id }) {
 function Confirmed({ booking: b }) {
   const { t, lang } = useI18n();
   const p = b.place;
+  // 予約できたら、画面いっぱいで忍者がよろこぶ（ボタンで閉じて「お店に行く前に」へ）
+  const [celebrate, setCelebrate] = useState(() => !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
   return (
     <>
+      {celebrate && (
+        <div className="booked-overlay" role="dialog" aria-modal="true" aria-label={t('b.done')}>
+          <div className="booked-fx" aria-hidden="true">
+            {Array.from({ length: 28 }, (_, i) => (
+              <span key={i} className={`booked-spark c${i % 3}`} style={{ '--i': i, '--x': `${(i * 37) % 100}%` }} />
+            ))}
+            {[0, 1, 2].map((i) => (
+              <svg key={i} className={`booked-shuriken s${i}`} viewBox="0 0 24 24">
+                <path d="M12 1 L14.6 9.4 L23 12 L14.6 14.6 L12 23 L9.4 14.6 L1 12 L9.4 9.4 Z" fill="#4a5462" />
+                <path d="M12 1 L14.6 9.4 L12 12 Z M23 12 L14.6 14.6 L12 12 Z" fill="#a6afba" />
+                <circle cx="12" cy="12" r="2.6" fill="#ffffff" />
+              </svg>
+            ))}
+          </div>
+          <span className="booked-jump" aria-hidden="true">
+            <NinjaBody pose="jump" />
+          </span>
+          <div className="booked-text">
+            <h1>{t('b.celebrateTitle')}</h1>
+            <p>{t('b.celebrateThanks', { name: p.name })}</p>
+            <p className="booked-next">{t('b.celebrateRead')}</p>
+            <button
+              type="button"
+              className="btn primary block"
+              autoFocus
+              onClick={() => {
+                setCelebrate(false);
+                window.dispatchEvent(new Event('ld-open-manners'));
+                setTimeout(() => document.querySelector('.manners')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+              }}
+            >
+              {t('b.celebrateGo')}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="success" role="status">
         <h1 style={{ marginBottom: 4 }}>{t('b.done')}</h1>
         <p style={{ margin: 0 }}>{t('b.doneBody', { name: p.name })}</p>

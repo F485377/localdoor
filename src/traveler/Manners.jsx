@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { slotLabel } from '../../lib/domain.js';
 import { Gloss } from '../glossary.jsx';
 import { useI18n } from '../i18n/index.jsx';
@@ -70,6 +70,12 @@ export default function Manners({ booking: b, defaultOpen = true }) {
   const { lang } = useI18n();
   const { user } = useSession();
   const [open, setOpen] = useState(defaultOpen);
+  // 予約完了の画面の「お店に行く前にを読む」から来たら開く
+  useEffect(() => {
+    const on = () => setOpen(true);
+    window.addEventListener('ld-open-manners', on);
+    return () => window.removeEventListener('ld-open-manners', on);
+  }, []);
   const p = b.place;
   const tr = (x, vars = {}) => Object.entries(vars).reduce((s, [k, val]) => s.replaceAll(`{${k}}`, val), x[lang] ?? x.en);
   const name = user?.name ?? '';

@@ -86,6 +86,8 @@ export const api = {
   // 事業者
   uploadPhoto,
   bizPlaces: () => request('biz'),
+  pushInfo: () => request('biz', { query: { view: 'push' } }),
+  savePush: (subscription, test = false) => request('biz', { method: 'POST', query: { action: 'push' }, body: { subscription, test } }),
   bizPlace: (id) => request('biz', { query: { id } }),
   bizBookings: () => request('biz', { query: { view: 'bookings' } }),
   savePlace: (body, id) => request('biz', { method: 'PUT', query: { action: 'place', id }, body }),

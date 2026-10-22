@@ -14,14 +14,17 @@
     "test": "node --test test/*.test.js",
     "dev:demo": "DB_SCHEMA=demo vite --port 5174",
     "demo:push": "DB_SCHEMA=demo dotenv -e .env.local -- node scripts/db-push.js",
-    "demo:seed": "DB_SCHEMA=demo dotenv -e .env.local -- node scripts/demo-seed.js"
+    "demo:seed": "DB_SCHEMA=demo dotenv -e .env.local -- node scripts/demo-seed.js",
+    "demo:password": "DB_SCHEMA=demo dotenv -e .env.local -- node scripts/demo-password.js"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
     "@vercel/blob": "^2.8.2",
+    "@vercel/functions": "^3.10.2",
     "leaflet": "^1.9.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.0",

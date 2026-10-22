@@ -9,7 +9,7 @@
 //   GET ?savedIds=1        旅行者：保存したお店の id だけ
 //   POST ?action=report    { placeId, reason, note }  この店舗を報告
 //   POST ?action=save      { placeId, saved }         お店を保存／外す（ログインが必要）
-//   GET ?reviews=<id>      口コミの一覧と集計（グラフ用）。ログインしていれば、書けるか・自分の口コミも
+//   GET ?reviews=<id>      口コミの集計（グラフ用）だけ。一人ひとりの口コミは返さない。ログインしていれば、書けるか・自分の口コミも
 //   POST ?action=review    { placeId, rating, withWhom, people, occasion?, religion?, calm?, special?, comment }
 //                          口コミを書く（書き直す）。そのお店を予約して、来店の時刻を過ぎた旅行者だけ
 import { currentUser, throttle } from '../lib/auth.js';
@@ -329,7 +329,6 @@ async function reviews(req, q) {
   const mine = user ? rows.find((r) => r.travelerId === user.id) : null;
   return {
     summary: { ...summarize(rows), localPct: place.localPct },
-    reviews: rows.map((r) => reviewView(r, lang, user?.id)),
     mine: mine ? reviewView(mine, lang, user.id) : null,
     canWrite: await canReview(user, id),
   };
