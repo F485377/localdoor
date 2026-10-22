@@ -5,7 +5,8 @@ import { NinjaBody, NinjaFace } from './Ninja.jsx';
 //   talking … しゃべっている間、小さく弾む
 //   skipBirth … 登場の演出（煙玉でドロン）を飛ばす
 //   pose="face" … 丸い枠の顔だけ（右下のボタン・会話のアイコン）
-export default function Character({ talking = false, skipBirth = false, pose = 'full', className = '' }) {
+//   stance … 全身のときのポーズ：'sign'（印）｜'scroll'（地図の巻物）｜'shuriken'（手裏剣を構える）
+export default function Character({ talking = false, skipBirth = false, pose = 'full', stance = 'sign', className = '' }) {
   if (pose === 'face' || pose === 'head') {
     return (
       <span className={`character head-only ${className}`} aria-hidden="true">
@@ -15,17 +16,8 @@ export default function Character({ talking = false, skipBirth = false, pose = '
   }
   return (
     <span className={`character${talking ? ' talking' : ''}${skipBirth ? '' : ' birth'} ${className}`} aria-hidden="true">
-      {!skipBirth && (
-        <span className="chr-smoke" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-          <span />
-          <span />
-        </span>
-      )}
       <span className="chr-bob">
-        <NinjaBody className="chr-img" />
+        <NinjaBody className="chr-img" pose={stance} key={stance} />
       </span>
     </span>
   );

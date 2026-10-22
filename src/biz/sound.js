@@ -1,5 +1,6 @@
 // 新しい予約の通知音（事業者画面を開いている間だけ）。音のファイルは使わず、Web Audio で「ピンポン」と鳴らす。
-// ブラウザは、利用者が一度タップするまで音を出させないので、「音をオンにする」を押したときに準備する
+// ブラウザは、利用者が一度タップするまで音を出させない。
+// 「オン」にしたことは覚えておき、次に開いたときは画面のどこかを最初にタップした時に、だまって音の準備をする（もう一度聞かない）
 import { store } from '../store.js';
 
 const KEY = 'jimoto-biz-sound';
@@ -17,8 +18,33 @@ export async function enableSound() {
 
 export const soundReady = () => Boolean(ctx && ctx.state === 'running');
 
+// オフにする（覚えておく）
+export function disableSound() {
+  store.set(KEY, false);
+}
+
+// 事業者画面を開いたときに呼ぶ。オンにしてあれば、最初のタップで音の準備をする（鳴らさない）
+export function armSound() {
+  if (!soundWanted() || soundReady()) return () => {};
+  const unlock = () => {
+    try {
+      ctx ??= new (window.AudioContext || window.webkitAudioContext)();
+      ctx.resume();
+    } catch {
+      /* 音を出せないブラウザ */
+    }
+  };
+  const opts = { once: true, capture: true };
+  window.addEventListener('pointerdown', unlock, opts);
+  window.addEventListener('keydown', unlock, opts);
+  return () => {
+    window.removeEventListener('pointerdown', unlock, opts);
+    window.removeEventListener('keydown', unlock, opts);
+  };
+}
+
 export function chime() {
-  if (!ctx || ctx.state !== 'running') return false;
+  if (!soundWanted() || !ctx || ctx.state !== 'running') return false;
   const now = ctx.currentTime;
   [
     [880, 0],

@@ -1,3 +1,4 @@
+import { dishPhoto, frontPhoto } from '../stockPhotos.js';
 import { useState } from 'react';
 import { REPORT_REASONS, dayMark, jstDate, slotLabel } from '../../lib/domain.js';
 import { api } from '../api.js';
@@ -103,6 +104,8 @@ export default function PlaceDetail({ id }) {
   return (
     <>
       <Back to="/search" label={t('back')} />
+      {/* パソコンでは、左に写真・右に絵巻 */}
+      <div className="detail-grid">
       {/* 一番上に写真をスライドで。写真がないお店は、料理・体験の写真風イラスト（「イメージ」と出す）とお店の絵 */}
       <PhotoCarousel
         label={p.name}
@@ -110,14 +113,26 @@ export default function PlaceDetail({ id }) {
           p.photos.length
             ? p.photos
             : [
-                ...dishSlides(p, lang).map((d, i) => ({ key: d.kind, node: <DishArt kind={d.kind} seed={i} />, caption: d.caption, note: t('d.imageNote') })),
-                { key: 'place', node: <PlaceArt place={artInput(p)} />, note: t('d.imageNote') },
+                // イメージ写真（無料で使える写真）。その種類の写真がなければ、写真風のイラスト
+                ...dishSlides(p, lang).map((d, i) => ({
+                  key: d.kind,
+                  node: dishPhoto(d.kind, i) ? <img className="stock-photo" src={dishPhoto(d.kind, i)} alt="" loading={i === 0 ? 'eager' : 'lazy'} /> : <DishArt kind={d.kind} seed={i} />,
+                  caption: d.caption,
+                  note: t('d.imageNote'),
+                })),
+                { key: 'place', node: frontPhoto(p) ? <img className="stock-photo" src={frontPhoto(p)} alt="" loading="lazy" /> : <PlaceArt place={artInput(p)} />, note: t('d.imageNote') },
               ]
         }
       />
       {/* 写真の下は巻物のように：上の軸から下へ、お店の情報がひらいていく */}
-      <div className="scroll-paper">
-        <span className="scroll-rod" aria-hidden="true" />
+      <div className="emaki">
+        {/* 上：軸（両はしに軸先）・金襴の表紙・紐 */}
+        <div className="emaki-top" aria-hidden="true">
+          <span className="emaki-rod" />
+          <span className="emaki-cover" />
+          <span className="emaki-cord" />
+        </div>
+        <div className="scroll-paper">
       <span className="eyebrow">
         {label('category', p.category, lang)} · {placeWhere(p, lang)}
       </span>
@@ -369,7 +384,10 @@ export default function PlaceDetail({ id }) {
           {t('d.report')}
         </button>
       </p>
-        <span className="scroll-rod bottom" aria-hidden="true" />
+        </div>
+        {/* まだ巻いてある部分。ひらくにつれて下へ転がる */}
+        <span className="emaki-roll" aria-hidden="true" />
+      </div>
       </div>
 
       <div className="sticky-actions" style={{ bottom: 'env(safe-area-inset-bottom)' }}>

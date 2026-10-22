@@ -137,7 +137,14 @@ function SkelCard() {
 export function Spinner({ ja = false, kind }) {
   const { t } = useI18n();
   let body;
-  if (kind === 'cards') body = [0, 1].map((i) => <SkelCard key={i} />);
+  if (kind === 'cards')
+    body = (
+      <div className="card-grid">
+        {[0, 1, 2].map((i) => (
+          <SkelCard key={i} />
+        ))}
+      </div>
+    );
   else if (kind === 'detail') {
     body = (
       <>

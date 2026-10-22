@@ -1,4 +1,3 @@
-import { DoorMark } from '../components/Logo.jsx';
 import { useEffect, useRef, useState } from 'react';
 import AuthScreen from '../components/AuthScreen.jsx';
 import ChatView from '../components/ChatView.jsx';
@@ -16,7 +15,7 @@ import PlaceEditor from './PlaceEditor.jsx';
 import PlaceList from './PlaceList.jsx';
 import { BizWelcome } from './BizGuide.jsx';
 import BizTour, { savedTour } from './BizTour.jsx';
-import { chime, soundWanted } from './sound.js';
+import { armSound, chime, soundWanted } from './sound.js';
 
 // 事業者画面（/biz、日本語、スマホファースト）
 export default function BizApp() {
@@ -45,6 +44,9 @@ export default function BizApp() {
     if (lastCount.current != null && badges.bookings > lastCount.current && soundWanted()) chime();
     lastCount.current = badges.bookings;
   }, [isBiz, badges.bookings]);
+
+  // 音をオンにしてあれば、最初のタップで音の準備をする（もう一度「オン」を押さなくていい）
+  useEffect(() => armSound(), []);
 
   useEffect(() => {
     document.documentElement.lang = 'ja';
@@ -102,7 +104,6 @@ export default function BizApp() {
       <header className="topbar">
         <div className="topbar-inner">
           <Link to="/biz" className="logo">
-            <DoorMark />
             Local<span>Door</span> <small className="muted" style={{ fontWeight: 600, fontSize: '0.8rem' }}>事業者</small>
           </Link>
           <span className="spacer" />

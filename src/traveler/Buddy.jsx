@@ -45,9 +45,10 @@ const clamp = (p) => ({
 });
 // いつもは右下（アプリの列の右下。画面下のボタン（送信・予約する）より少し上）。
 // 指で動かせるが、場所は覚えない：画面が変わったり、画面の大きさが変わったりしたら右下に戻る
-const APP_WIDTH = 520; // styles.css の --app-width と同じ（パソコンでもスマホの幅で出す）
+// アプリの列の幅（styles.css の --app-width。スマホはスマホの幅、パソコンは広く）
+const appWidth = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-width')) || 520;
 const defaultPos = () => {
-  const right = Math.min(window.innerWidth, (window.innerWidth + APP_WIDTH) / 2);
+  const right = Math.min(window.innerWidth, (window.innerWidth + appWidth()) / 2);
   return { x: right - SIZE - 8, y: window.innerHeight - SIZE - 84 };
 };
 
@@ -59,6 +60,16 @@ export default function Buddy({ hidden: hideHere = false, at }) {
   const [pos, setPos] = useState(() => clamp(defaultPos()));
   const [bubble, setBubble] = useState(false);
   const drag = useRef(null);
+  // 最初の会話が終わったとき、右下にぽんっと出てくる
+  const [arrive, setArrive] = useState(false);
+  useEffect(() => {
+    const on = () => {
+      setArrive(true);
+      setTimeout(() => setArrive(false), 1200);
+    };
+    window.addEventListener('jimoto-buddy-arrive', on);
+    return () => window.removeEventListener('jimoto-buddy-arrive', on);
+  }, []);
 
   // 画面の大きさが変わったら右下に戻す
   useEffect(() => {
@@ -100,7 +111,7 @@ export default function Buddy({ hidden: hideHere = false, at }) {
   // 吹き出しは、キャラクターが画面の右側にいれば左に、左側にいれば右に出す
   const left = pos.x > window.innerWidth / 2;
   return (
-    <div className="buddy" style={{ left: pos.x, top: pos.y }}>
+    <div className={`buddy${arrive ? ' arrive' : ''}`} style={{ left: pos.x, top: pos.y }}>
       {bubble && (
         <div className={`buddy-bubble ${left ? 'to-left' : 'to-right'}`} role="dialog" aria-label={t('buddy.ask')}>
           <span>{t('buddy.ask')}</span>

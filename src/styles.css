@@ -1392,7 +1392,7 @@ p {
   padding: 12px 14px;
   margin: 12px 0;
 }
-.perk-box b {
+.perk-box > b {
   color: var(--primary-strong);
 }
 
@@ -2958,9 +2958,9 @@ p {
     z-index: 30;
     left: 50%;
     bottom: calc(100% + 6px);
-    transform: translateX(-50%);
+    transform: translateX(calc(-50% + var(--tip-shift, 0px)));
     width: max-content;
-    max-width: 260px;
+    max-width: min(260px, calc(100vw - 16px));
     padding: 8px 10px;
     border-radius: 10px;
     background: #1f2a44;
@@ -3837,16 +3837,14 @@ select {
   color: #6e4526;
   font-size: 0.95rem;
 }
-.splash.opening .splash-tap {
-  visibility: hidden;
+.door-lantern-body {
+  transform-origin: 190px 6px;
+  transform-box: view-box;
+  animation: lantern-sway 3.2s ease-in-out infinite;
 }
-.splash.opening {
-  animation: splash-out 0.35s ease-in 1s both;
-}
-@keyframes splash-out {
-  to {
-    opacity: 0;
-    transform: scale(1.04);
+@keyframes lantern-sway {
+  50% {
+    transform: rotate(3deg);
   }
 }
 .role-logo {
@@ -3856,14 +3854,14 @@ select {
   gap: 6px;
 }
 .role-logo .door-logo {
-  width: 120px;
+  width: 150px;
 }
 @media (prefers-reduced-motion: reduce) {
   .door-logo .door-left,
   .door-logo .door-right {
     transition: none;
   }
-  .splash.opening {
+  .door-lantern-body {
     animation: none;
   }
 }
@@ -3975,7 +3973,7 @@ select {
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
     0 6px 16px rgba(230, 0, 51, 0.08);
 }
-.perk-box b::before {
+.perk-box > b::before {
   content: '';
   display: inline-block;
   width: 13px;
@@ -3983,49 +3981,6 @@ select {
   margin-right: 6px;
   vertical-align: -3px;
   background: var(--lantern) no-repeat center / contain;
-}
-/* お店の画面：巻物 */
-.scroll-paper {
-  position: relative;
-  margin: 18px calc(var(--gutter, 20px) * -0.6) 0;
-  padding: 26px calc(var(--gutter, 20px) * 0.6) 30px;
-  background: var(--paper);
-  box-shadow:
-    inset 0 0 32px rgba(160, 120, 60, 0.1),
-    0 6px 14px rgba(79, 47, 24, 0.08);
-  animation: scroll-open 1.6s cubic-bezier(0.45, 0, 0.25, 1) 0.15s both;
-}
-@keyframes scroll-open {
-  from {
-    clip-path: inset(0 0 100% 0);
-  }
-  to {
-    clip-path: inset(0 0 0 0);
-  }
-}
-.scroll-rod {
-  position: absolute;
-  left: -8px;
-  right: -8px;
-  top: -10px;
-  height: 20px;
-  border-radius: 10px;
-  background:
-    linear-gradient(var(--primary), var(--primary-strong)) left / 14px 100% no-repeat,
-    linear-gradient(var(--primary), var(--primary-strong)) right / 14px 100% no-repeat,
-    linear-gradient(#b07a4a, var(--brown) 55%, var(--brown-dark));
-  box-shadow:
-    inset 0 2px 1px rgba(255, 255, 255, 0.35),
-    0 3px 6px rgba(79, 47, 24, 0.3);
-}
-.scroll-rod.bottom {
-  top: auto;
-  bottom: -10px;
-}
-@media (prefers-reduced-motion: reduce) {
-  .scroll-paper {
-    animation: none;
-  }
 }
 /* 各欄の見出し：茶色ののれん（右側に切れ目）。欄と欄の間にちょうちんの列 */
 .sec {
@@ -4092,4 +4047,1579 @@ select {
 .local-fact {
   background: linear-gradient(var(--paper), var(--cream));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+
+/* ---------- 最初の画面：言語・はじめる・扉が画面いっぱいに → 光 → 居酒屋 → 扉が閉まって外へ ---------- */
+.splash {
+  cursor: default;
+  overflow: hidden;
+  gap: 14px;
+}
+.splash-door {
+  position: relative;
+  z-index: 2;
+  transition: transform 1.1s cubic-bezier(0.5, 0, 0.75, 0.6);
+}
+.splash-langs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 420px;
+  margin-top: 6px;
+}
+.splash-start {
+  min-width: 200px;
+  min-height: 52px;
+  font-size: 1.1rem;
+  margin-top: 6px;
+}
+.splash.opening > :not(.splash-door) {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.splash.opening .door-lantern {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+/* 画面と同じ大きさになったところで、引き戸が開いて光が広がる */
+.door-logo .door-left,
+.door-logo .door-right {
+  transition: transform 1.1s cubic-bezier(0.6, 0, 0.25, 1);
+}
+.splash.lit::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 48%, #fffaf0 0%, #ffeec4 35%, #ffd98a 75%);
+  opacity: 0;
+  animation: door-light 1s ease-in 0.35s forwards;
+}
+@keyframes door-light {
+  to {
+    opacity: 1;
+  }
+}
+
+/* 居酒屋の中（一点透視の絵。壁は扉の中の灯りと同じ黄色） */
+.role-pick.izakaya {
+  background: #ffd98a;
+  overflow: hidden;
+  animation: izakaya-in 0.9s ease-out both;
+}
+@keyframes izakaya-in {
+  from {
+    filter: brightness(1.35) saturate(0.6);
+  }
+}
+.izakaya-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 50%;
+}
+.iz-lantern {
+  animation: lantern-sway 4.8s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+}
+/* 旅行者を選ぶと、店の奥（画面のまん中ののれん）へ進んでいく */
+.role-pick.izakaya.leaving .izakaya-scene {
+  animation: walk-in 1.5s cubic-bezier(0.55, 0, 0.7, 0.4) forwards;
+}
+@keyframes walk-in {
+  to {
+    transform: scale(9);
+  }
+}
+.role-pick.izakaya.leaving .role-inner {
+  opacity: 0;
+  transform: scale(1.15);
+  transition:
+    opacity 0.45s ease,
+    transform 0.6s ease;
+}
+.role-pick.izakaya.leaving::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, #ffffff, #f4f8ef 55%, #dbe9d0);
+  opacity: 0;
+  animation: door-light 0.5s ease-in 1.05s forwards;
+}
+/* のれんをくぐったあとの光（外の叢の上で、ふっと消える） */
+.outside-light {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, #ffffff, #f4f8ef 55%, #dbe9d0);
+  animation: outside-fade 1s ease-out 0.1s both;
+}
+@keyframes outside-fade {
+  to {
+    opacity: 0;
+  }
+}
+.role-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 120px;
+}
+.role-title {
+  font-family: 'Zen Old Mincho', var(--font);
+  font-weight: 900;
+  color: #3a2410;
+  font-size: 1.3rem;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.role-pick.izakaya .role-btn {
+  background: linear-gradient(180deg, #fffdf7 0%, #fbf3e2 100%);
+}
+
+/* 忍者の名前 */
+.ninja-name {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  z-index: 2;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #ffffff;
+  background: linear-gradient(180deg, #8a5a34, #6e4526 60%, #4c2f1a);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 4px 10px rgba(79, 47, 24, 0.25);
+  animation: ob-say 0.6s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash-door,
+  .door-logo .door-left,
+  .door-logo .door-right {
+    transition: none;
+  }
+  .splash.lit::after,
+  .role-pick.izakaya,
+  .role-pick.izakaya.leaving .izakaya-scene,
+  .outside-light,
+  .ninja-name {
+    animation: none;
+  }
+  .outside-light {
+    display: none;
+  }
+}
+
+/* 事業者：新しい予約の音の ON / OFF */
+.sound-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.seg {
+  display: inline-flex;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(16, 24, 40, 0.1);
+  box-shadow: var(--gloss-hi), var(--lift-1);
+}
+.seg button {
+  min-width: 56px;
+  min-height: 40px;
+  border: 0;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  background: var(--surface-gloss);
+  color: var(--muted);
+}
+.seg button.on {
+  background: var(--red-gloss);
+  color: #ffffff;
+  text-shadow: 0 1px 0 rgba(110, 0, 22, 0.25);
+}
+
+/* アカウント登録・ログインへ移る前の煙（ゆったり） */
+.smoke-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  pointer-events: all;
+  overflow: hidden;
+}
+.smoke-veil span {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #ffffff 0%, #f4f1ec 45%, rgba(236, 232, 226, 0.9) 70%, rgba(236, 232, 226, 0) 72%);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  animation: smoke-in 1.6s cubic-bezier(0.3, 0.6, 0.3, 1) both;
+}
+.smoke-veil span:nth-child(1) { left: 50%; top: 60%; animation-delay: 0s; }
+.smoke-veil span:nth-child(2) { left: 18%; top: 75%; animation-delay: 0.12s; }
+.smoke-veil span:nth-child(3) { left: 82%; top: 72%; animation-delay: 0.18s; }
+.smoke-veil span:nth-child(4) { left: 30%; top: 38%; animation-delay: 0.3s; }
+.smoke-veil span:nth-child(5) { left: 72%; top: 34%; animation-delay: 0.36s; }
+.smoke-veil span:nth-child(6) { left: 50%; top: 15%; animation-delay: 0.45s; }
+.smoke-veil span:nth-child(7) { left: 8%; top: 20%; animation-delay: 0.52s; }
+.smoke-veil span:nth-child(8) { left: 92%; top: 12%; animation-delay: 0.58s; }
+.smoke-veil span:nth-child(9) { left: 50%; top: 95%; animation-delay: 0.62s; }
+@keyframes smoke-in {
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+.smoke-veil.clearing {
+  pointer-events: none;
+  animation: smoke-clear 1.7s ease-out forwards;
+}
+@keyframes smoke-clear {
+  to {
+    opacity: 0;
+    transform: scale(1.15) translateY(-4%);
+  }
+}
+.stock-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.credits {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.credits li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  word-break: break-word;
+}
+.credits img {
+  width: 72px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex: none;
+}
+
+
+/* ---------- 和紙の背景 ---------- */
+:root {
+  --washi: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22260%22 height=%22260%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22 seed=%224%22/%3E%3CfeColorMatrix values=%220 0 0 0 0.45  0 0 0 0 0.36  0 0 0 0 0.22  0 0 0 0.09 0%22/%3E%3C/filter%3E%3Crect width=%22260%22 height=%22260%22 filter=%22url(%23n)%22/%3E%3C/svg%3E");
+  --washi-fiber: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22300%22%3E%3Cfilter id=%22f%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.008 0.38%22 numOctaves=%222%22 seed=%229%22/%3E%3CfeColorMatrix values=%220 0 0 0 0.55  0 0 0 0 0.55  0 0 0 0 0.55  0 0 0 0.12 -0.03%22/%3E%3C/filter%3E%3Cfilter id=%22g%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.4 0.012%22 numOctaves=%221%22 seed=%223%22/%3E%3CfeColorMatrix values=%220 0 0 0 0.6  0 0 0 0 0.6  0 0 0 0 0.6  0 0 0 0.08 -0.03%22/%3E%3C/filter%3E%3Crect width=%22300%22 height=%22300%22 filter=%22url(%23f)%22/%3E%3Crect width=%22300%22 height=%22300%22 filter=%22url(%23g)%22/%3E%3C/svg%3E");
+  --washi-gold: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%2260%22%3E%3Cg fill=%22%23c9a24a%22 opacity=%220.55%22%3E%3Crect x=%228%22 y=%2210%22 width=%223%22 height=%222%22 transform=%22rotate(20 9 11)%22/%3E%3Crect x=%2240%22 y=%2226%22 width=%222%22 height=%222%22/%3E%3Crect x=%2266%22 y=%228%22 width=%224%22 height=%222%22 transform=%22rotate(-30 68 9)%22/%3E%3Crect x=%2292%22 y=%2234%22 width=%222%22 height=%223%22/%3E%3Crect x=%2222%22 y=%2244%22 width=%222%22 height=%222%22/%3E%3Crect x=%22104%22 y=%2214%22 width=%223%22 height=%222%22/%3E%3Crect x=%2254%22 y=%2248%22 width=%223%22 height=%222%22 transform=%22rotate(40 55 49)%22/%3E%3C/g%3E%3C/svg%3E");
+}
+.app {
+  background-color: #ffffff;
+  background-image: var(--washi-fiber);
+  background-size: 300px 300px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .app {
+    background-color: var(--bg);
+  }
+}
+
+/* ---------- お店の画面：絵巻 ---------- */
+.emaki {
+  position: relative;
+  margin: 30px calc(var(--gutter, 20px) * -0.5) 0;
+}
+.emaki-top {
+  position: relative;
+  height: 50px;
+}
+/* 軸：木の棒。両はしに漆塗りの軸先 */
+.emaki-rod {
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  top: 0;
+  height: 22px;
+  border-radius: 11px;
+  background: linear-gradient(#c08a56, #8a5a34 45%, #5a3820 85%, #3e2614);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.4),
+    0 4px 8px rgba(79, 47, 24, 0.35);
+  z-index: 2;
+}
+.emaki-rod::before,
+.emaki-rod::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  width: 18px;
+  height: 32px;
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, transparent 0 6px, #e6c46a 6px 8px, transparent 8px),
+    linear-gradient(#e60033, #b80029 55%, #6a0018);
+  box-shadow:
+    inset 0 2px 2px rgba(255, 255, 255, 0.45),
+    0 3px 6px rgba(0, 0, 0, 0.3);
+}
+.emaki-rod::before {
+  left: -12px;
+}
+.emaki-rod::after {
+  right: -12px;
+}
+/* 表紙（金襴）：軸のすぐ下の、金の模様の布 */
+.emaki-cover {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 14px;
+  height: 36px;
+  background: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2228%22 height=%2224%22%3E%3Crect width=%2228%22 height=%2224%22 fill=%22%238a1c22%22/%3E%3Cg fill=%22none%22 stroke=%22%23d9b45a%22 stroke-width=%221.4%22%3E%3Cpath d=%22M0 24 a14 14 0 0 1 28 0%22/%3E%3Cpath d=%22M4 24 a10 10 0 0 1 20 0%22/%3E%3Cpath d=%22M8 24 a6 6 0 0 1 12 0%22/%3E%3Cpath d=%22M-14 12 a14 14 0 0 1 28 0 M14 12 a14 14 0 0 1 28 0%22/%3E%3C/g%3E%3C/svg%3E") repeat-x 0 0 / 28px 24px, #8a1c22;
+  border-bottom: 3px solid #d9b45a;
+  box-shadow: inset 0 -6px 8px rgba(0, 0, 0, 0.25);
+}
+/* 紐と房 */
+.emaki-cord {
+  position: absolute;
+  right: 26px;
+  top: 12px;
+  width: 4px;
+  height: 64px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #5a2a6e, #8a4aa0, #5a2a6e);
+  z-index: 3;
+  transform-origin: 50% 0;
+  animation: cord-sway 4.5s ease-in-out infinite;
+}
+.emaki-cord::after {
+  content: '';
+  position: absolute;
+  left: -5px;
+  bottom: -18px;
+  width: 14px;
+  height: 22px;
+  border-radius: 4px 4px 7px 7px;
+  background: repeating-linear-gradient(90deg, #8a4aa0 0 2px, #5a2a6e 2px 3px);
+}
+@keyframes cord-sway {
+  50% {
+    transform: rotate(4deg);
+  }
+}
+/* 紙：和紙の地に、金の砂子と細い罫（界線） */
+.scroll-paper {
+  position: relative;
+  padding: 34px calc(var(--gutter, 20px) * 0.5 + 14px) 40px;
+  background:
+    var(--washi-gold) repeat-x 0 0 / 120px 60px,
+    var(--washi-gold) repeat-x 30px 100% / 120px 60px,
+    var(--washi) 0 0 / 260px 260px,
+    linear-gradient(90deg, #f1e7d2, #fdf9f0 6%, #fffdf7 50%, #fdf9f0 94%, #f1e7d2);
+  box-shadow:
+    inset 6px 0 0 -4px rgba(201, 162, 74, 0.45),
+    inset -6px 0 0 -4px rgba(201, 162, 74, 0.45),
+    0 8px 18px rgba(79, 47, 24, 0.12);
+  /* backwards：ひらき終わったら切り取りを残さない（吹き出しなどが切れないように） */
+  animation: scroll-open 2.6s cubic-bezier(0.42, 0, 0.3, 1) 0.2s backwards;
+}
+@keyframes scroll-open {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+/* 下の巻いてある部分（ひらくと下へ転がって、最後は下の軸になる） */
+.emaki-roll {
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  height: 30px;
+  top: calc(100% - 26px);
+  border-radius: 15px;
+  background:
+    repeating-linear-gradient(0deg, rgba(160, 120, 60, 0.12) 0 1px, transparent 1px 4px),
+    linear-gradient(#fffaf0, #f3e7cf 45%, #d9c49c 85%, #b89a6a);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 255, 255, 0.8),
+    0 6px 10px rgba(79, 47, 24, 0.28);
+  animation: emaki-roll 2.6s cubic-bezier(0.42, 0, 0.3, 1) 0.2s both;
+}
+.emaki-roll::before,
+.emaki-roll::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  width: 16px;
+  height: 32px;
+  border-radius: 6px;
+  background: linear-gradient(#e60033, #b80029 55%, #6a0018);
+  box-shadow: inset 0 2px 2px rgba(255, 255, 255, 0.45);
+}
+.emaki-roll::before {
+  left: -10px;
+}
+.emaki-roll::after {
+  right: -10px;
+}
+@keyframes emaki-roll {
+  from {
+    top: 46px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-paper,
+  .emaki-roll,
+  .emaki-cord {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   余白をたっぷり（2026-10-22）
+   ========================================================================== */
+:root {
+  --gutter: 22px;
+}
+.main {
+  padding-top: 32px;
+}
+h1 {
+  margin-bottom: 20px;
+}
+p {
+  margin-bottom: 18px;
+}
+.card {
+  padding: 24px;
+  margin-bottom: 28px;
+}
+.search-summary {
+  margin-bottom: 30px;
+}
+.place-card {
+  margin-bottom: 36px;
+}
+.place-card.v .place-card-body {
+  padding: 20px 22px 24px;
+}
+.sec {
+  margin-bottom: 34px;
+}
+.sec-body {
+  padding: 22px 22px;
+}
+.sec + .sec,
+.sec + h2 {
+  margin-top: 40px;
+}
+.btn-row {
+  gap: 12px;
+}
+.chips {
+  gap: 10px;
+}
+.field {
+  margin-bottom: 22px;
+}
+.perk-box {
+  margin: 20px 0;
+  padding: 16px 18px;
+}
+
+/* ==========================================================================
+   動きをゆっくり（2026-10-22）
+   ========================================================================== */
+.chr-bob {
+  animation-duration: 3.6s;
+}
+.character.talking .chr-img {
+  animation-duration: 0.55s;
+}
+.ob-bubble {
+  animation-duration: 0.7s;
+}
+.btn,
+.role-btn {
+  transition-duration: 0.22s;
+}
+.skel {
+  animation-duration: 2s;
+}
+.door-lantern-body {
+  animation-duration: 4.8s;
+}
+.splash-door {
+  transition-duration: 1s;
+}
+.door-logo .door-left,
+.door-logo .door-right {
+  transition-duration: 1s;
+}
+.splash.lit::after {
+  animation-duration: 0.9s;
+  animation-delay: 0.3s;
+}
+.splash.opening > :not(.splash-door) {
+  transition-duration: 0.8s;
+}
+.role-pick.izakaya {
+  animation-duration: 1.3s;
+}
+.ob-thicket.rustle path {
+  animation-duration: 0.2s;
+}
+.chr-smoke span {
+  animation-duration: 1.8s;
+  animation-delay: 1.05s;
+}
+.character.birth .chr-bob {
+  animation:
+    chr-birth 1s cubic-bezier(0.3, 1.5, 0.5, 1) 1.35s both,
+    chr-bob 3.6s ease-in-out 2.4s infinite;
+}
+.smoke-veil span {
+  animation-duration: 2s;
+}
+.smoke-veil.clearing {
+  animation-duration: 2.3s;
+}
+.ninja-name {
+  animation-duration: 0.9s;
+}
+
+/* ==========================================================================
+   画面の大きさに合わせる（2026-10-22）
+   スマホはスマホの幅、タブレットは少し広く、パソコンは画面を広く使う
+   ========================================================================== */
+@media (min-width: 640px) {
+  :root {
+    --app-width: 760px;
+    --gutter: 32px;
+  }
+}
+@media (min-width: 1000px) {
+  :root {
+    --app-width: 1180px;
+    --gutter: 44px;
+  }
+  body {
+    background: #ffffff;
+  }
+  .app {
+    max-width: none;
+    box-shadow: none;
+  }
+  .topbar-inner,
+  .main,
+  .tabs-inner {
+    max-width: var(--app-width);
+  }
+  .sheet {
+    max-width: 640px;
+  }
+  .ob,
+  .role-inner {
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
+  /* 検索結果・保存したお店：カードを横に並べる */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 44px 32px;
+  }
+  .card-grid .place-card {
+    margin: 0;
+  }
+  /* お店の画面：左に写真（スクロールしても見えたまま）、右に絵巻 */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 48px;
+    align-items: start;
+  }
+  .detail-grid > .carousel {
+    position: sticky;
+    top: 110px;
+    margin: 0;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 14px 40px rgba(79, 47, 24, 0.16);
+  }
+  .detail-grid .emaki {
+    margin-top: 4px;
+  }
+  /* 事業者の画面：入力しやすい幅に */
+  .app.biz .main {
+    max-width: 960px;
+  }
+}
+
+/* ---------- 画面いっぱいに出す画面（旅行者か事業者か・忍者との会話）は、パソコンでも画面全体をおおう ---------- */
+.role-pick,
+.ob {
+  max-width: none;
+  margin: 0;
+}
+.role-pick {
+  align-items: center;
+}
+.role-inner {
+  width: 100%;
+  max-width: 480px;
+}
+.ob-talk {
+  padding-left: max(16px, calc((100vw - 640px) / 2));
+  padding-right: max(16px, calc((100vw - 640px) / 2));
+}
+@media (min-width: 1000px) {
+  html {
+    font-size: 17px;
+  }
+  /* 最初の検索（どこへ行きますか？）：まん中に読みやすい幅で */
+  .search-form {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .search-form svg {
+    max-height: 56vh;
+  }
+  .role-inner {
+    max-width: 520px;
+    margin-top: 150px;
+  }
+  .izakaya-menu {
+    gap: 16px;
+  }
+  .izakaya-tag {
+    font-size: 1.1rem;
+    height: auto;
+    min-height: 96px;
+  }
+}
+
+/* ---------- 忍者のリュウ（フェルト人形のような立体の忍者・画像） ---------- */
+.ninja-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: 50% 100%;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 10px 14px rgba(30, 40, 60, 0.18));
+}
+.ninja-face {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 38% 30%, #ffffff, #f1ece6);
+  box-shadow:
+    inset 0 0 0 3px #6e4526,
+    inset 0 0 0 5px rgba(255, 255, 255, 0.7),
+    0 6px 14px rgba(30, 40, 60, 0.25);
+}
+.ninja-face img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 30%;
+  transform: scale(1.08) translateY(4%);
+}
+.bc-face .ninja-face {
+  box-shadow:
+    inset 0 0 0 2px #6e4526,
+    0 2px 6px rgba(30, 40, 60, 0.2);
+}
+
+
+/* ---------- 最初の画面：ロゴと文字は、はじめにゆっくり順に出てくる ---------- */
+.splash:not(.opening) > * {
+  animation: splash-in 1.3s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.splash:not(.opening) > :nth-child(1) { animation-delay: 0.15s; }
+.splash:not(.opening) > :nth-child(2) { animation-delay: 0.6s; }
+.splash:not(.opening) > :nth-child(3) { animation-delay: 0.95s; }
+.splash:not(.opening) > :nth-child(4) { animation-delay: 1.3s; }
+.splash:not(.opening) > :nth-child(5) { animation-delay: 1.65s; }
+.splash:not(.opening) > :nth-child(6) { animation-delay: 1.95s; }
+@keyframes splash-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* ---------- 右下の忍者：最初の会話が終わってから出てくる ---------- */
+html[data-intro] .buddy {
+  display: none;
+}
+/* 会話の最後に、忍者が右下へ飛んでいく */
+.ob-walker.to-corner {
+  animation: to-corner 0.9s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+@keyframes to-corner {
+  to {
+    transform: translate(calc(-50% + 42vw), 30vh) scale(0.14) rotate(20deg);
+    opacity: 0.4;
+  }
+}
+.buddy.arrive {
+  animation: buddy-arrive 0.9s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+@keyframes buddy-arrive {
+  from {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* ---------- スマホの大きさに合わせる：写真の列が画面の右にはみ出さないように ---------- */
+.carousel {
+  margin-left: calc(var(--gutter) * -1);
+  margin-right: calc(var(--gutter) * -1);
+}
+html,
+body {
+  overflow-x: clip;
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash > *,
+  .ob-walker.to-corner,
+  .buddy.arrive,
+  .iz-lantern {
+    animation: none;
+  }
+}
+
+/* ---------- いただいた画像を使った場面（2026-10-22） ---------- */
+/* 最初の画面：扉の写真 */
+.splash-door {
+  width: min(94vw, 680px);
+  aspect-ratio: 1655 / 950;
+  position: relative;
+}
+.door-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+}
+.door-photo.light {
+  opacity: 0;
+  transition: opacity 0.7s ease 0.5s;
+}
+.splash.opening .door-photo.light {
+  opacity: 1;
+}
+/* 居酒屋の中の写真 */
+.izakaya-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  transform-origin: 50% 50%;
+}
+.role-pick.izakaya.leaving .izakaya-photo {
+  animation: walk-in 1.5s cubic-bezier(0.55, 0, 0.7, 0.4) forwards;
+}
+.role-title {
+  color: #fff8e8;
+  text-shadow: 0 2px 10px rgba(40, 20, 0, 0.6);
+}
+.role-pick.izakaya .role-btn {
+  backdrop-filter: blur(6px);
+  background: linear-gradient(180deg, rgba(255, 253, 247, 0.94), rgba(251, 243, 226, 0.9));
+}
+/* 叢：フェルトの丘と草 */
+.ob-stage {
+  background:
+    radial-gradient(ellipse 75% 30% at 22% 78%, #b9d6a3 98%, transparent 100%),
+    radial-gradient(ellipse 80% 26% at 88% 82%, #a8c98f 98%, transparent 100%),
+    linear-gradient(to bottom, #f6f5f1 0%, #efeee8 55%, #a9c98f 80%, #9cc085 100%);
+}
+.ob-thicket {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 30%;
+  background: url('/scene/grass.webp') repeat-x 50% 100% / auto 100%;
+  pointer-events: none;
+}
+.ob-thicket.rustle {
+  animation: thicket-rustle 0.18s ease-in-out 8 alternate;
+}
+@keyframes thicket-rustle {
+  from {
+    transform: translateX(-3px) skewX(-1.5deg);
+  }
+  to {
+    transform: translateX(3px) skewX(1.5deg);
+  }
+}
+/* 上のバーの下：竿につるした紙のちょうちん */
+.topbar::after {
+  height: 50px;
+  background: url('/scene/lanterns.webp') repeat-x 0 0 / auto 50px;
+  mix-blend-mode: multiply;
+}
+.app > .main {
+  padding-top: 62px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ob-thicket.rustle,
+  .role-pick.izakaya.leaving .izakaya-photo {
+    animation: none;
+  }
+  .door-photo.light {
+    transition: none;
+  }
+}
+.splash:not(.opening) .door-photo {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%), linear-gradient(transparent 0, #000 6%, #000 94%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%), linear-gradient(transparent 0, #000 6%, #000 94%, transparent 100%);
+  mask-composite: intersect;
+}
+
+/* ---------- 2026-10-22：ロゴ・言語1列・スマホに合わせる・居酒屋・煙玉 ---------- */
+/* 最初の画面：画面の高さに収める */
+.splash {
+  height: 100dvh;
+  min-height: 0;
+  gap: clamp(6px, 1.6dvh, 14px);
+  padding: 16px;
+  box-sizing: border-box;
+}
+.splash-door {
+  width: auto;
+  aspect-ratio: auto;
+}
+.splash .door-logo {
+  width: min(58vw, 34dvh, 260px);
+}
+.splash-logo {
+  font-size: clamp(2.2rem, min(13vw, 8dvh), 4.6rem);
+}
+.splash-tagline {
+  font-size: clamp(0.9rem, 2dvh, 1.05rem);
+}
+.splash-langs {
+  flex-wrap: nowrap;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px 2px;
+}
+.splash-langs::-webkit-scrollbar {
+  display: none;
+}
+.splash-langs .chip {
+  flex: none;
+  min-height: 34px;
+  padding: 4px 10px;
+  font-size: clamp(0.72rem, 3.2vw, 0.9rem);
+}
+/* 扉が開いて近づき、光で目の前が真っ黄色に */
+.splash.lit::after {
+  background: #ffd98a;
+  animation: door-light 0.7s ease-in 0.15s forwards;
+}
+.door-logo .door-left,
+.door-logo .door-right {
+  transition-duration: 1.2s;
+}
+/* 居酒屋：真っ黄色から、写真の居酒屋に */
+.role-pick.izakaya {
+  animation: izakaya-from-light 1.1s ease-out both;
+}
+@keyframes izakaya-from-light {
+  from {
+    filter: brightness(1.9) saturate(0.3) sepia(0.6);
+  }
+}
+.izakaya-photo {
+  object-position: 50% 51%;
+  transform-origin: 50% 51%;
+}
+/* 答えたら、奥ののれんへグーッと引き寄せられる */
+.role-pick.izakaya.leaving .izakaya-photo {
+  animation: pull-in 1.5s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+}
+@keyframes pull-in {
+  to {
+    transform: scale(14);
+    filter: blur(1px);
+  }
+}
+.role-title {
+  color: #3a2410;
+  text-shadow: 0 1px 6px rgba(255, 255, 255, 0.9);
+}
+.role-inner {
+  margin-top: clamp(40px, 14dvh, 150px);
+  gap: clamp(10px, 2dvh, 16px);
+  padding: 0 18px;
+  box-sizing: border-box;
+}
+.role-pick.izakaya .role-btn {
+  padding: clamp(12px, 2dvh, 18px);
+}
+/* スマホ：会話の画面も画面の高さに収める */
+.ob {
+  height: 100dvh;
+}
+.ob-talk {
+  min-height: 0;
+}
+/* 煙玉：転がった玉から、灰色の煙がもくもくと立ちのぼり、流れて消える */
+.smoke-bomb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+.smoke-bomb .puff {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: puff-rise 4.4s cubic-bezier(0.2, 0.65, 0.3, 1) var(--d) both;
+}
+@keyframes puff-rise {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.1);
+  }
+  12% {
+    opacity: 0.96;
+  }
+  50% {
+    opacity: 0.95;
+    transform: translate(var(--x), var(--y)) scale(var(--sc));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--x) * 1.5 - 60px), calc(var(--y) * 1.3 - 30px)) scale(calc(var(--sc) * 1.6));
+  }
+}
+.smoke-bomb .bomb {
+  animation: bomb-fade 3.6s ease-out both;
+}
+@keyframes bomb-fade {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+/* 忍者は煙が一番濃くなったころに現れる */
+.character.birth .chr-bob {
+  animation:
+    chr-birth 0.9s cubic-bezier(0.3, 1.4, 0.5, 1) 1.7s both,
+    chr-bob 3.6s ease-in-out 2.7s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .role-pick.izakaya,
+  .role-pick.izakaya.leaving .izakaya-photo {
+    animation: none;
+  }
+}
+
+/* ---------- 2026-10-22 b ---------- */
+/* 忍者の話：下の枠を吹き出しにして、文ごとに改行 */
+.ob-bubble {
+  position: relative;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 2px solid #6e4526;
+  box-shadow: 0 6px 16px rgba(79, 47, 24, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.7;
+}
+.ob-bubble::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -11px;
+  width: 18px;
+  height: 18px;
+  margin-left: -9px;
+  background: #ffffff;
+  border-left: 2px solid #6e4526;
+  border-top: 2px solid #6e4526;
+  transform: rotate(45deg);
+}
+.ob-line {
+  display: block;
+}
+.ob-talk {
+  border-top: 0;
+  padding-top: 20px;
+}
+/* 白い煙が一気にふくらんで、すぐ引く */
+.smoke-bomb .puff {
+  animation-duration: 1.7s;
+}
+.smoke-bomb .bomb {
+  animation-duration: 1.2s;
+}
+/* 忍者はドロンッと素早く出る */
+.character.birth .chr-bob {
+  animation:
+    ninja-pop 0.32s cubic-bezier(0.2, 1.8, 0.4, 1) 0.45s both,
+    chr-bob 3.6s ease-in-out 1s infinite;
+}
+@keyframes ninja-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(18%) scale(0.75);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+/* 居酒屋：質問の字は、白い札にのせて見やすく */
+.role-title {
+  align-self: center;
+  margin: 0;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(255, 253, 247, 0.92);
+  color: #3a2410;
+  text-shadow: none;
+  box-shadow: 0 4px 14px rgba(60, 36, 16, 0.18);
+  font-size: clamp(1rem, 4.4vw, 1.25rem);
+}
+/* のれんの奥へ：まん中に吸い込まれて、光で飛ぶ */
+.izakaya-photo {
+  object-position: 50% 47%;
+  transform-origin: 50% 47%;
+}
+.role-pick.izakaya.leaving .izakaya-photo {
+  animation: pull-in 1.4s cubic-bezier(0.65, 0, 0.9, 0.3) forwards;
+}
+@keyframes pull-in {
+  to {
+    transform: scale(16);
+    filter: brightness(1.6) blur(2px);
+  }
+}
+.role-pick.izakaya.leaving::after {
+  background: radial-gradient(circle at 50% 47%, #ffffff 0%, #fffaf0 35%, rgba(255, 245, 220, 0.95) 70%);
+  animation: door-light 0.55s ease-in 0.85s forwards;
+}
+/* 左上のロゴを、上のバーいっぱいに大きく */
+.topbar-inner {
+  min-height: 64px;
+}
+.logo {
+  font-size: clamp(1.5rem, 6vw, 1.9rem);
+  letter-spacing: -0.03em;
+}
+.door-mark {
+  width: 30px;
+  height: 36px;
+  margin-right: 9px;
+}
+/* 上にぶら下がるちょうちんの竿：太い木の竿に */
+.topbar::after {
+  height: 58px;
+  background:
+    linear-gradient(180deg, #a87a4e 0%, #7a4f2c 45%, #4c2f1a 100%) 0 0 / 100% 10px no-repeat,
+    url('/scene/lanterns.webp') repeat-x 0 6px / auto 50px;
+}
+.topbar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 1px);
+  height: 3px;
+  background: rgba(255, 255, 255, 0.45);
+  z-index: 1;
+  pointer-events: none;
+}
+.app > .main {
+  padding-top: 72px;
+}
+
+@keyframes puff-rise {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.1);
+  }
+  8% {
+    opacity: 1;
+  }
+  28% {
+    opacity: 1;
+    transform: translate(var(--x), var(--y)) scale(var(--sc));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--x) * 1.5 - 60px), calc(var(--y) * 1.3 - 30px)) scale(calc(var(--sc) * 1.6));
+  }
+}
+.status-line > h1 {
+  white-space: nowrap;
+  font-size: clamp(1.25rem, 6.2vw, 1.55rem);
+}
+
+/* ---------- 2026-10-22 c ---------- */
+/* ロゴ：ちょうちんを除いた扉のまん中を、画面のまん中に */
+.splash .door-logo {
+  transform: translateX(12.8%);
+}
+/* 戸を奥へ押して開ける（外側のちょうつがいを軸に、奥へまわって細く暗くなる） */
+.door-logo .door-left,
+.door-logo .door-right {
+  transform-box: fill-box;
+  transition:
+    transform 1.1s cubic-bezier(0.45, 0, 0.3, 1),
+    filter 1.1s ease;
+}
+.door-logo .door-left {
+  transform-origin: 0% 50%;
+}
+.door-logo .door-right {
+  transform-origin: 100% 50%;
+}
+.door-logo.open .door-left,
+.door-logo.open .door-right {
+  transform: scaleX(0.16) scaleY(0.94);
+  filter: brightness(0.7);
+}
+/* 光：短く、白くきらきら */
+.splash.lit::after {
+  background: radial-gradient(circle at 50% 50%, #ffffff 0%, #fffdf6 40%, #fff6dd 75%, #ffefc4 100%);
+  animation: door-light 0.45s ease-out 0s forwards;
+}
+.splash.lit::before,
+.role-pick.izakaya.leaving::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, #fff 50%, transparent 51%), radial-gradient(3px 3px at 72% 22%, #fff7d6 50%, transparent 51%),
+    radial-gradient(2px 2px at 40% 64%, #fff 50%, transparent 51%), radial-gradient(4px 4px at 82% 70%, #fff 50%, transparent 51%),
+    radial-gradient(3px 3px at 12% 82%, #fff7d6 50%, transparent 51%), radial-gradient(2px 2px at 58% 44%, #fff 50%, transparent 51%),
+    radial-gradient(3px 3px at 30% 12%, #fff 50%, transparent 51%), radial-gradient(2px 2px at 90% 40%, #fff7d6 50%, transparent 51%),
+    radial-gradient(14px 14px at 64% 58%, rgba(255, 255, 255, 0.9) 0, transparent 60%), radial-gradient(18px 18px at 26% 46%, rgba(255, 250, 230, 0.9) 0, transparent 60%);
+  filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 8px #ffe9a6);
+  animation: sparkle 0.9s ease-out forwards;
+}
+.role-pick.izakaya.leaving::before {
+  animation: sparkle 0.9s ease-out 0.75s both;
+}
+@keyframes sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}
+.role-pick.izakaya {
+  animation: izakaya-from-light 0.7s ease-out both;
+}
+@keyframes izakaya-from-light {
+  from {
+    filter: brightness(1.6) saturate(0.8);
+  }
+}
+/* のれんの扉を画面のまん中に（写真の中で、のれんは左右 47.8%・上下 47.5% のところ） */
+.izakaya-photo {
+  object-position: 47.8% 47.5%;
+  transform-origin: 47.8% 47.5%;
+}
+@media (orientation: portrait) {
+  .izakaya-photo {
+    object-position: calc(50% + 2.2dvh) 50%;
+    transform-origin: 50% 47.5%;
+  }
+}
+.role-pick.izakaya.leaving::after {
+  background: radial-gradient(circle at 50% 47.5%, #ffffff 0%, #fffdf6 45%, rgba(255, 246, 221, 0.95) 80%);
+  animation: door-light 0.4s ease-in 0.9s forwards;
+}
+/* 忍者は煙が濃くなってから、ドロンッと */
+.character.birth .chr-bob {
+  animation:
+    ninja-pop 0.32s cubic-bezier(0.2, 1.8, 0.4, 1) 0.62s both,
+    chr-bob 3.6s ease-in-out 1.1s infinite;
+}
+
+
+/* ==========================================================================
+   2026-10-22 d：マット・ちょうちんなし・正面ロゴ・押し広がる光・居酒屋は奥から・白い煙ひとつ・ふつうの草・地図①・絵巻のカード
+   ========================================================================== */
+/* マット（ぷっくりしたつやをやめる） */
+:root {
+  --gloss-hi: 0 0 #0000;
+  --gloss-lo: 0 0 #0000;
+  --lift-1: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --lift-2: 0 1px 3px rgba(16, 24, 40, 0.06), 0 6px 16px rgba(16, 24, 40, 0.05);
+  --surface-gloss: var(--surface);
+  --red-gloss: var(--primary);
+  --red-lift: none;
+  --brocade: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2228%22 height=%2224%22%3E%3Crect width=%2228%22 height=%2224%22 fill=%22%238a1c22%22/%3E%3Cg fill=%22none%22 stroke=%22%23d9b45a%22 stroke-width=%221.4%22%3E%3Cpath d=%22M0 24 a14 14 0 0 1 28 0%22/%3E%3Cpath d=%22M4 24 a10 10 0 0 1 20 0%22/%3E%3Cpath d=%22M8 24 a6 6 0 0 1 12 0%22/%3E%3Cpath d=%22M-14 12 a14 14 0 0 1 28 0 M14 12 a14 14 0 0 1 28 0%22/%3E%3C/g%3E%3C/svg%3E");
+}
+.btn.primary,
+.chip.on,
+.view-toggle button.on,
+.seg button.on {
+  text-shadow: none;
+}
+.btn:active:not(:disabled),
+.btn.primary:active:not(:disabled) {
+  box-shadow: none;
+}
+.splash-logo {
+  text-shadow: none;
+}
+.menu-btn {
+  box-shadow: none;
+  background: transparent;
+}
+.topbar {
+  box-shadow: none;
+}
+.sec-head {
+  box-shadow: none;
+  background-image: none;
+}
+.role-btn.primary {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+/* ちょうちんの飾りは、いったんなし（ロゴのちょうちんだけ残す） */
+.topbar::after,
+.topbar::before,
+.status-line > h1::before,
+.page-title::before,
+.sec .sec-head::before,
+.perk-box > b::before,
+.sec + .sec::before,
+.sec + h2::before {
+  content: none;
+  display: none;
+}
+.topbar {
+  border-bottom: 1px solid var(--border);
+}
+.app > .main {
+  padding-top: 32px;
+}
+
+/* 最初の画面：正面のロゴ。ちょうちんを除いた扉のまん中を、画面のまん中に */
+.splash .door-logo {
+  width: min(70vw, 38dvh, 300px);
+  transform: translateX(10.6%);
+  filter: none;
+}
+/* 引き戸は横にすべる */
+.door-logo .door-left,
+.door-logo .door-right {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  filter: none;
+  transition: transform 1s cubic-bezier(0.45, 0, 0.25, 1);
+}
+.door-logo.open .door-left {
+  transform: translateX(-84px);
+  filter: none;
+}
+.door-logo.open .door-right {
+  transform: translateX(84px);
+  filter: none;
+}
+.door-logo .door-lantern {
+  transition: opacity 0.4s ease;
+}
+/* 近づきながら開く（同時に） */
+.splash-door {
+  transition: transform 1.1s cubic-bezier(0.55, 0, 0.6, 1);
+}
+/* 黄色の幕はやめて、入口から光が押し広がる */
+.splash.lit::after {
+  content: none;
+  display: none;
+}
+.push-light {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 40vmax;
+  height: 40vmax;
+  margin: -20vmax 0 0 -20vmax;
+  border-radius: 50%;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(circle, #ffffff 0%, #ffffff 45%, rgba(255, 252, 240, 0.9) 60%, rgba(255, 250, 235, 0) 72%);
+  transform: scale(0);
+  animation: push-light 1s cubic-bezier(0.3, 0.6, 0.35, 1) 0.6s forwards;
+}
+@keyframes push-light {
+  to {
+    transform: scale(4.2);
+  }
+}
+.splash.lit::before {
+  animation-delay: 0.1s;
+}
+
+/* 居酒屋の写真：のれんの戸と戸の間（写真の左右 47.9%・上下 47.6%）を画面のまん中に。奥から手前へ出てくる */
+.izakaya-photo {
+  position: absolute;
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: max(108vw, calc(108dvh * 1269 / 1240));
+  height: auto;
+  max-width: none;
+  object-fit: fill;
+  transform: translate(-47.9%, -47.6%);
+  transform-origin: 47.9% 47.6%;
+  animation: izakaya-from-back 1s cubic-bezier(0.2, 0.7, 0.25, 1) both;
+}
+@keyframes izakaya-from-back {
+  from {
+    transform: translate(-47.9%, -47.6%) scale(0.25);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+.role-pick.izakaya {
+  animation: none;
+  background: #ffffff;
+}
+.role-pick.izakaya.leaving .izakaya-photo {
+  animation: pull-in-c 1.4s cubic-bezier(0.65, 0, 0.9, 0.3) forwards;
+}
+@keyframes pull-in-c {
+  to {
+    transform: translate(-47.9%, -47.6%) scale(16);
+    filter: brightness(1.6) blur(2px);
+  }
+}
+.role-pick.izakaya.leaving::after {
+  background: radial-gradient(circle at 50% 50%, #ffffff 0%, #fffdf6 45%, rgba(255, 252, 240, 0.95) 80%);
+}
+
+/* 大きな白い煙ひとつ：下から上へ */
+.smoke-bomb .smoke-cloud {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: smoke-rise 1.9s cubic-bezier(0.25, 0.6, 0.35, 1) both;
+}
+@keyframes smoke-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(70%) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 1;
+    transform: translateY(5%) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-55%) scale(1.35);
+  }
+}
+.character.birth .chr-bob {
+  animation:
+    ninja-pop 0.32s cubic-bezier(0.2, 1.8, 0.4, 1) 0.7s both,
+    chr-bob 3.6s ease-in-out 1.2s infinite;
+}
+
+/* ふつうの草（絵）と、空と丘 */
+.ob-thicket {
+  background: none;
+  height: 24%;
+  bottom: 0;
+}
+.ob-thicket.rustle {
+  animation: none;
+}
+.ob-thicket.rustle path {
+  animation: ob-rustle 0.15s ease-in-out 6 alternate;
+}
+.ob-stage {
+  background:
+    radial-gradient(ellipse 70% 26% at 20% 74%, #dbe9d0 98%, transparent 100%),
+    radial-gradient(ellipse 80% 24% at 85% 78%, #cfe2c3 98%, transparent 100%),
+    linear-gradient(to bottom, #ffffff 0%, #f4f8ef 60%, #a9c99a 80%, #8db77e 100%);
+}
+
+/* 地図①：色はそのまま。巻物の軸・青海波の海・筆の輪郭・方角の印 */
+.jp-map.ninja-scroll {
+  position: relative;
+  background: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2744%27 height=%2722%27%3E%3Cg fill=%27none%27 stroke=%27%23cfe3f0%27 stroke-width=%271.2%27%3E%3Ccircle cx=%2722%27 cy=%2722%27 r=%2720%27/%3E%3Ccircle cx=%2722%27 cy=%2722%27 r=%2714%27/%3E%3Ccircle cx=%2722%27 cy=%2722%27 r=%278%27/%3E%3Ccircle cx=%270%27 cy=%2722%27 r=%2720%27/%3E%3Ccircle cx=%270%27 cy=%2722%27 r=%2714%27/%3E%3Ccircle cx=%270%27 cy=%2722%27 r=%278%27/%3E%3Ccircle cx=%2744%27 cy=%2722%27 r=%2720%27/%3E%3Ccircle cx=%2744%27 cy=%2722%27 r=%2714%27/%3E%3Ccircle cx=%2744%27 cy=%2722%27 r=%278%27/%3E%3C/g%3E%3C/svg%3E") 0 0 / 44px 22px, #eef6fb;
+  border-radius: 6px;
+  padding: 26px 14px;
+  box-shadow: inset 0 0 0 8px #fbf6ea, inset 0 0 0 10px #c9a46a;
+}
+.jp-map.ninja-scroll::before,
+.jp-map.ninja-scroll::after {
+  content: '';
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  height: 16px;
+  border-radius: 8px;
+  background:
+    linear-gradient(#e60033, #8a001c) left / 14px 100% no-repeat,
+    linear-gradient(#e60033, #8a001c) right / 14px 100% no-repeat,
+    linear-gradient(#b07a4a, #6e4526 55%, #3c2412);
+}
+.jp-map.ninja-scroll::before {
+  top: -6px;
+}
+.jp-map.ninja-scroll::after {
+  bottom: -6px;
+}
+.jp-compass {
+  position: absolute;
+  right: 16px;
+  bottom: 22px;
+  width: 54px;
+  height: 54px;
+  pointer-events: none;
+}
+
+/* 検索結果のカード：絵巻（軸・金襴の表紙・和紙・下の巻き） */
+.place-card.v {
+  margin-top: 20px;
+  margin-bottom: 44px;
+  padding-top: 26px;
+  border-radius: 4px;
+  background:
+    var(--brocade) repeat-x 0 8px / 28px 22px,
+    var(--washi-gold) repeat-x 0 100% / 120px 60px,
+    linear-gradient(90deg, #f1e7d2, #fdf9f0 5%, #fffdf7 50%, #fdf9f0 95%, #f1e7d2);
+  box-shadow:
+    inset 5px 0 0 -3px rgba(201, 162, 74, 0.5),
+    inset -5px 0 0 -3px rgba(201, 162, 74, 0.5),
+    0 6px 14px rgba(79, 47, 24, 0.12);
+  border: 0;
+}
+.place-card.v::before {
+  left: -8px;
+  right: -8px;
+  top: -6px;
+  height: 18px;
+  border-radius: 9px;
+  background:
+    linear-gradient(#e60033, #8a001c) left / 14px 100% no-repeat,
+    linear-gradient(#e60033, #8a001c) right / 14px 100% no-repeat,
+    linear-gradient(#b07a4a, #6e4526 55%, #3c2412);
+}
+.place-card.v::after {
+  content: '';
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  bottom: -12px;
+  height: 22px;
+  border-radius: 11px;
+  background:
+    linear-gradient(#e60033, #8a001c) left / 12px 100% no-repeat,
+    linear-gradient(#e60033, #8a001c) right / 12px 100% no-repeat,
+    repeating-linear-gradient(0deg, rgba(160, 120, 60, 0.14) 0 1px, transparent 1px 4px),
+    linear-gradient(#fffaf0, #f3e7cf 45%, #d9c49c 85%, #b89a6a);
+  box-shadow: 0 5px 8px rgba(79, 47, 24, 0.22);
+}
+.place-card.v .place-card-photo {
+  margin: 0 10px;
+  border-radius: 2px;
+}
+.place-card.v .place-card-body {
+  padding-bottom: 30px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .izakaya-photo,
+  .smoke-bomb .smoke-cloud,
+  .push-light {
+    animation: none;
+  }
+  .push-light {
+    display: none;
+  }
+}
+.jp-map svg.jp-compass {
+  width: 54px;
+  height: 54px;
+  max-height: none;
+}
+.splash-langs {
+  justify-content: center;
+  overflow: visible;
+  width: 100%;
+}
+.splash-langs .chip {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 4px clamp(6px, 2vw, 10px);
+  font-size: clamp(0.66rem, 3vw, 0.9rem);
+  white-space: nowrap;
+}
+
+/* 扉の動き（2026-10-22 の版に戻す）：まずゆっくり大きくなって画面いっぱいに → そこで横に開く → 光 */
+.splash-door {
+  transition: transform 1.6s cubic-bezier(0.5, 0, 0.75, 0.6);
+}
+.door-logo .door-left,
+.door-logo .door-right {
+  transition: transform 1.3s cubic-bezier(0.45, 0, 0.25, 1);
+}
+.push-light {
+  animation: push-light 1.1s cubic-bezier(0.3, 0.6, 0.35, 1) 0.55s forwards;
 }

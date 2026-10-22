@@ -53,6 +53,7 @@ export default function Menu({ open, onClose, onSettings }) {
         <hr />
         {item('/terms', t('menu.terms'))}
         {item('/privacy', t('menu.privacy'))}
+        {item('/credits', t('menu.credits'))}
         {OPERATOR.email && <a href={`mailto:${OPERATOR.email}`}>{t('menu.contact')}</a>}
         <a href="/biz">{t('menu.business')}</a>
         {user && (

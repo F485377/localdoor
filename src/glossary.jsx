@@ -274,6 +274,19 @@ const PATTERN = new RegExp(`(${ALL.map(([m]) => esc(m)).join('|')})`, 'gi');
 const termOf = (word) => ALL.find(([m]) => m === word.toLowerCase())?.[1];
 
 // 文章の中の用語を青字のボタンにする。タップすると下から意味が出る
+// かざしたときの吹き出しが画面の左右からはみ出さないように、出したあとで横にずらす
+function fitTip(e) {
+  const tip = e.currentTarget.querySelector('.gloss-tip');
+  if (!tip) return;
+  tip.style.setProperty('--tip-shift', '0px');
+  requestAnimationFrame(() => {
+    const r = tip.getBoundingClientRect();
+    const pad = 8;
+    const shift = r.left < pad ? pad - r.left : r.right > window.innerWidth - pad ? window.innerWidth - pad - r.right : 0;
+    tip.style.setProperty('--tip-shift', `${Math.round(shift)}px`);
+  });
+}
+
 export function Gloss({ text }) {
   const { t, lang } = useI18n();
   const [open, setOpen] = useState(null);
@@ -284,7 +297,7 @@ export function Gloss({ text }) {
       {parts.map((part, i) => {
         const term = i % 2 === 1 ? termOf(part) : null;
         return term ? (
-          <button key={i} type="button" className="gloss" onClick={() => setOpen(term)} aria-haspopup="dialog" aria-describedby={`gloss-${term.id}`}>
+          <button key={i} type="button" className="gloss" onClick={() => setOpen(term)} onMouseEnter={fitTip} onFocus={fitTip} aria-haspopup="dialog" aria-describedby={`gloss-${term.id}`}>
             {part}
             {/* マウスをかざすと、その場で意味を出す（スマホはタップで下から出す） */}
             <span className="gloss-tip" role="tooltip" id={`gloss-${term.id}`}>

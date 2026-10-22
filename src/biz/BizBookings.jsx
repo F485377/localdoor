@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { enableSound, soundReady, soundWanted } from './sound.js';
+import { disableSound, enableSound, soundWanted } from './sound.js';
 import { CANCEL_REASONS, slotLabel } from '../../lib/domain.js';
 import { api } from '../api.js';
 import { label, options } from '../labels.js';
@@ -182,32 +182,33 @@ function ChatLink({ travelerId, shop }) {
 
 // 通知音。止める機能は持たない。ブラウザの決まりで、開くたびに一度「音をオンにする」をタップしてもらう必要がある
 function SoundToggle() {
-  const [on, setOn] = useState(() => soundWanted() && soundReady());
+  const [on, setOn] = useState(() => soundWanted());
   const [error, setError] = useState(false);
-  if (on) {
-    return (
-      <div className="sound-toggle small">
-        新しい予約が入ると音が鳴ります（この画面を開いている間）
-      </div>
-    );
-  }
+  const pick = async (v) => {
+    setError(false);
+    if (!v) {
+      disableSound();
+      setOn(false);
+      return;
+    }
+    try {
+      await enableSound();
+      setOn(true);
+    } catch {
+      setError(true);
+    }
+  };
   return (
-    <div className="notice small sound-toggle">
-      <span style={{ flex: 1 }}>{soundWanted() ? '画面を開き直したので、もう一度タップしてください。' : '新しい予約を音で知らせます。'}</span>
-      <button
-        className="btn primary"
-        onClick={async () => {
-          try {
-            await enableSound();
-            setOn(true);
-            setError(false);
-          } catch {
-            setError(true);
-          }
-        }}
-      >
-        音をオンにする
-      </button>
+    <div className="sound-toggle small">
+      <span style={{ flex: 1 }}>新しい予約の音（この画面を開いている間）</span>
+      <span className="seg" role="group" aria-label="新しい予約の音">
+        <button type="button" className={on ? 'on' : ''} aria-pressed={on} onClick={() => pick(true)}>
+          ON
+        </button>
+        <button type="button" className={on ? '' : 'on'} aria-pressed={!on} onClick={() => pick(false)}>
+          OFF
+        </button>
+      </span>
       {error && <span>このブラウザでは音を鳴らせませんでした。</span>}
     </div>
   );

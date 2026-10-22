@@ -1,104 +1,100 @@
-// LocalDoor のロゴ（採用案：縦組み。格子の引き戸は閉じたまま、すきまから灯りが少しもれる。横に「地元」のちょうちん）
-//   DoorLogo … 最初の画面の大きなロゴ。open にすると引き戸が左右に開いて、奥の灯りが見える
-//   DoorMark … 上のバーの小さな扉の印
-const BROWN = '#6e4526';
-const BROWN_DARK = '#4c2f1a';
-const PAPER = '#e9d6ad';
-const LATTICE = '#8a5a35';
-const LIGHT = '#d9a43b';
-
-// 引き戸の片方（格子つき）。x は左上
-function Panel({ x }) {
+// LocalDoor のロゴ（いただいた写真のロゴを正面から見た形に描いたもの）：丸い木の梁・柱・格子と障子の引き戸2枚・敷居・腕に下がる「地元」のちょうちん
+//   DoorLogo … 最初の画面の大きなロゴ。open にすると引き戸が左右にすべって開く
+//   扉のまん中は viewBox の x=134（ちょうちんを除いた扉のまん中）
+function Lattice({ x, id }) {
   return (
     <g>
-      <rect x={x} y="20" width="50" height="124" fill={PAPER} />
-      <g stroke={LATTICE} strokeWidth="3.5">
-        <line x1={x} y1="51" x2={x + 50} y2="51" />
-        <line x1={x} y1="82" x2={x + 50} y2="82" />
-        <line x1={x} y1="113" x2={x + 50} y2="113" />
-        <line x1={x + 17} y1="20" x2={x + 17} y2="144" />
-        <line x1={x + 34} y1="20" x2={x + 34} y2="144" />
+      <rect x={x} y="44" width="86" height="200" fill={`url(#${id}-paper)`} />
+      <g fill="#5a3820">
+        <rect x={x + 27} y="44" width="4" height="200" />
+        <rect x={x + 55} y="44" width="4" height="200" />
+        <rect x={x} y="92" width="86" height="4" />
+        <rect x={x} y="142" width="86" height="4" />
+        <rect x={x} y="192" width="86" height="4" />
       </g>
-      <rect x={x} y="20" width="50" height="124" fill="url(#ld-panel-sheen)" />
-      <rect x={x} y="20" width="50" height="124" fill="none" stroke={BROWN} strokeWidth="4" />
+      <rect x={x} y="44" width="86" height="200" fill="none" stroke={`url(#${id}-wood)`} strokeWidth="7" />
     </g>
   );
 }
 
 export function DoorLogo({ open = false }) {
+  const id = 'ld';
   return (
-    <svg className={`door-logo${open ? ' open' : ''}`} viewBox="0 0 220 160" role="img" aria-label="LocalDoor">
+    <svg className={`door-logo${open ? ' open' : ''}`} viewBox="0 0 340 280" role="img" aria-label="LocalDoor">
       <defs>
-        <linearGradient id="ld-frame" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#9a6a42" />
-          <stop offset="0.5" stopColor={BROWN} />
-          <stop offset="1" stopColor={BROWN_DARK} />
+        <linearGradient id={`${id}-wood`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#4a2c16" />
+          <stop offset="0.35" stopColor="#6e4526" />
+          <stop offset="0.7" stopColor="#5a3820" />
+          <stop offset="1" stopColor="#3c2412" />
         </linearGradient>
-        <linearGradient id="ld-panel-sheen" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#ffffff" stopOpacity="0.45" />
-          <stop offset="0.4" stopColor="#ffffff" stopOpacity="0" />
-          <stop offset="1" stopColor="#7a4a26" stopOpacity="0.12" />
+        <linearGradient id={`${id}-beam`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8a5c38" />
+          <stop offset="0.35" stopColor="#6e4526" />
+          <stop offset="1" stopColor="#3c2412" />
         </linearGradient>
-        <radialGradient id="ld-glow" cx="0.5" cy="0.55" r="0.6">
-          <stop offset="0" stopColor="#fff8e0" />
-          <stop offset="0.6" stopColor="#ffd98a" />
-          <stop offset="1" stopColor="#f2b45a" />
+        <radialGradient id={`${id}-paper`} cx="0.5" cy="0.45" r="0.7">
+          <stop offset="0" stopColor="#fff6e2" />
+          <stop offset="0.6" stopColor="#f6e2bd" />
+          <stop offset="1" stopColor="#e5c793" />
         </radialGradient>
-        <radialGradient id="ld-lantern" cx="0.35" cy="0.3" r="0.8">
-          <stop offset="0" stopColor="#ff8aa0" />
-          <stop offset="0.35" stopColor="#ff2d55" />
-          <stop offset="1" stopColor="#b80029" />
+        <radialGradient id={`${id}-lantern`} cx="0.38" cy="0.32" r="0.75">
+          <stop offset="0" stopColor="#ff8a9c" />
+          <stop offset="0.4" stopColor="#ff1f45" />
+          <stop offset="1" stopColor="#a8001f" />
         </radialGradient>
-        <clipPath id="ld-opening">
-          <rect x="12" y="20" width="104" height="124" />
+        <radialGradient id={`${id}-halo`} cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stopColor="#ff3355" stopOpacity="0.3" />
+          <stop offset="1" stopColor="#ff3355" stopOpacity="0" />
+        </radialGradient>
+        <clipPath id={`${id}-opening`}>
+          <rect x="46" y="44" width="176" height="200" />
         </clipPath>
       </defs>
-      <g transform="translate(20 0)">
-        {/* 枠 */}
-        <rect x="0" y="0" width="128" height="14" rx="3" fill="url(#ld-frame)" />
-        <rect x="4" y="14" width="120" height="136" fill="url(#ld-frame)" />
-        {/* 奥の灯り（開くと見える） */}
-        <rect x="12" y="20" width="104" height="124" fill="url(#ld-glow)" />
-        <g clipPath="url(#ld-opening)">
-          <rect className="door-seam" x="62" y="20" width="4" height="124" fill={LIGHT} />
-          <g className="door-left">
-            <Panel x={12} />
-          </g>
-          <g className="door-right">
-            <Panel x={66} />
-          </g>
+      <ellipse cx="134" cy="266" rx="128" ry="9" fill="#3c2412" opacity="0.12" />
+      <ellipse className="door-lantern" cx="300" cy="120" rx="58" ry="78" fill={`url(#${id}-halo)`} />
+      <rect x="34" y="34" width="14" height="222" fill={`url(#${id}-wood)`} />
+      <rect x="220" y="34" width="14" height="222" fill={`url(#${id}-wood)`} />
+      <rect x="28" y="244" width="212" height="14" rx="2" fill={`url(#${id}-beam)`} />
+      {/* 戸の向こう：開くと白い光 */}
+      <rect className="door-inside" x="46" y="44" width="176" height="200" fill="#ffffff" />
+      <g clipPath={`url(#${id}-opening)`}>
+        <g className="door-left">
+          <Lattice x={47} id={id} />
+          <rect x="128" y="138" width="3" height="16" rx="1.5" fill="#2a1a0e" />
         </g>
-        <rect x="0" y="146" width="128" height="8" rx="2" fill={BROWN_DARK} />
-        <rect x="2" y="1" width="124" height="3" rx="1.5" fill="#ffffff" opacity="0.35" />
+        <g className="door-right">
+          <Lattice x={135} id={id} />
+          <rect x="138" y="138" width="3" height="16" rx="1.5" fill="#2a1a0e" />
+        </g>
       </g>
-      {/* 「地元」のちょうちん */}
-      <g transform="translate(166 18)">
-        <line x1="20" y1="0" x2="20" y2="10" stroke="#3a2b22" strokeWidth="2.5" />
-        <rect x="9" y="8" width="22" height="7" rx="2" fill="#3a2b22" />
-        <ellipse cx="20" cy="42" rx="20" ry="28" fill="url(#ld-lantern)" />
-        <path d="M2 32 h36 M0 42 h40 M2 52 h36" stroke="#b80029" strokeWidth="1.6" opacity="0.7" />
-        <ellipse cx="13" cy="28" rx="5" ry="8" fill="#ffffff" opacity="0.35" />
-        <text x="20" y="38" textAnchor="middle" fontSize="11" fontWeight="800" fill="#fff6e8">
-          地
-        </text>
-        <text x="20" y="54" textAnchor="middle" fontSize="11" fontWeight="800" fill="#fff6e8">
-          元
-        </text>
-        <rect x="9" y="68" width="22" height="7" rx="2" fill="#3a2b22" />
+      <rect x="20" y="18" width="228" height="24" rx="12" fill={`url(#${id}-beam)`} />
+      <rect x="30" y="21" width="208" height="4" rx="2" fill="#ffffff" opacity="0.22" />
+      <g className="door-lantern">
+        <rect x="240" y="26" width="64" height="6" rx="3" fill="#8a5a2a" />
+        <circle cx="242" cy="29" r="5" fill="#3c2412" />
+        <g className="door-lantern-body">
+          <line x1="300" y1="32" x2="300" y2="46" stroke="#2a1a0e" strokeWidth="2.5" />
+          <rect x="285" y="44" width="30" height="10" rx="3" fill="#2a1a0e" />
+          <ellipse cx="300" cy="104" rx="34" ry="50" fill={`url(#${id}-lantern)`} />
+          <g stroke="#a8001f" strokeWidth="1" opacity="0.45" fill="none">
+            <path d="M268 74 Q300 80 332 74" />
+            <path d="M266 92 Q300 98 334 92" />
+            <path d="M266 112 Q300 118 334 112" />
+            <path d="M268 132 Q300 138 332 132" />
+          </g>
+          <ellipse cx="286" cy="80" rx="6" ry="14" fill="#ffffff" opacity="0.35" />
+          <text x="300" y="100" textAnchor="middle" fontWeight="900" fontSize="24" fill="#ffffff">
+            地
+          </text>
+          <text x="300" y="130" textAnchor="middle" fontWeight="900" fontSize="24" fill="#ffffff">
+            元
+          </text>
+          <rect x="285" y="152" width="30" height="10" rx="3" fill="#2a1a0e" />
+          <line x1="300" y1="162" x2="300" y2="172" stroke="#d9a43b" strokeWidth="2.5" />
+          <circle cx="300" cy="175" r="4" fill="#d9a43b" />
+        </g>
       </g>
-    </svg>
-  );
-}
-
-// 上のバーの小さな扉の印
-export function DoorMark() {
-  return (
-    <svg className="door-mark" viewBox="0 0 32 38" aria-hidden="true" focusable="false">
-      <rect x="0" y="0" width="32" height="4" rx="1" fill={BROWN} />
-      <rect x="1" y="4" width="30" height="34" fill={BROWN} />
-      <rect x="4" y="6" width="24" height="30" fill={PAPER} />
-      <path d="M4 16 H28 M4 26 H28 M10 6 V36 M22 6 V36" stroke={LATTICE} strokeWidth="1.6" />
-      <rect x="15" y="6" width="2" height="30" fill={LIGHT} />
     </svg>
   );
 }

@@ -56,7 +56,13 @@ export default function Saved() {
           {places.some((p) => p.lat == null) && <p className="small muted">{t('res.noLocation')}</p>}
         </>
       )}
-      {view === 'list' && places.map((p) => <PlaceCard key={p.id} place={p} date={date} />)}
+      {view === 'list' && (
+        <div className="card-grid">
+          {places.map((p) => (
+            <PlaceCard key={p.id} place={p} date={date} />
+          ))}
+        </div>
+      )}
     </>
   );
 }

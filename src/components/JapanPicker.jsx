@@ -92,7 +92,13 @@ export default function JapanPicker({ value, onChange, ja = false, allowAll = fa
       </nav>
 
       {step !== 'city' && (
-        <div className="jp-map">
+        <div className="jp-map ninja-scroll">
+          <svg width="0" height="0" style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
+            <filter id="jp-rough">
+              <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="2" />
+              <feDisplacementMap in="SourceGraphic" scale="2.2" />
+            </filter>
+          </svg>
           {!map && <p className="muted small center">{error ? '⚠' : t('loading')}</p>}
           {map && (
             <svg viewBox={viewBox} role="img" aria-label={t('tapRegion')}>
@@ -104,8 +110,9 @@ export default function JapanPicker({ value, onChange, ja = false, allowAll = fa
                     key={code}
                     d={s.d}
                     fill={dim ? '#eeeeee' : COLORS[p.region]}
-                    stroke={code === pref ? 'var(--primary)' : '#ffffff'}
-                    strokeWidth={step === 'japan' ? 1.2 : 0.8}
+                    stroke={code === pref ? 'var(--primary)' : '#4a2c16'}
+                    strokeWidth={step === 'japan' ? 1.4 : 0.9}
+                    filter="url(#jp-rough)"
                     className={dim ? '' : 'jp-shape'}
                     onClick={() => tapShape(code)}
                   >
@@ -124,6 +131,14 @@ export default function JapanPicker({ value, onChange, ja = false, allowAll = fa
                 })}
             </svg>
           )}
+          <svg className="jp-compass" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="52" r="38" fill="#fbf6ea" stroke="#4a2c16" strokeWidth="2" />
+            <path d="M50 18 L58 52 L50 86 L42 52 Z" fill="#e60033" />
+            <path d="M16 52 L50 46 L84 52 L50 58 Z" fill="#4a2c16" opacity="0.7" />
+            <text x="50" y="12" textAnchor="middle" fontSize="14" fontWeight="700" fill="#4a2c16">
+              N
+            </text>
+          </svg>
         </div>
       )}
 

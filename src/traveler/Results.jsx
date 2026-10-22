@@ -1,3 +1,4 @@
+import { frontPhoto } from '../stockPhotos.js';
 import { useCallback, useEffect, useState } from 'react';
 import { jstDate } from '../../lib/domain.js';
 import { prefOf } from '../../lib/japan.js';
@@ -135,9 +136,11 @@ export default function Results() {
               {t('res.legend')}
             </p>
           )}
-          {places.map((p) => (
-            <PlaceCard key={p.id} place={p} date={date} />
-          ))}
+          <div className="card-grid">
+            {places.map((p) => (
+              <PlaceCard key={p.id} place={p} date={date} />
+            ))}
+          </div>
           {data?.pages > 1 && <Pager page={data.page} pages={data.pages} onGo={(n) => (update({ page: n > 1 ? String(n) : null }), window.scrollTo(0, 0))} />}
           {places.length > 0 && <RateNote />}
         </>
@@ -252,7 +255,7 @@ export function PlaceCard({ place: p, date, compact = false }) {
     <Link to={`/p/${p.id}`} className="place-card v">
       {!compact && (
         <div className="place-card-photo">
-          {p.photo ? <img src={p.photo} alt="" loading="lazy" /> : <PlaceArt place={artInput(p)} />}
+          {p.photo ? <img src={p.photo} alt="" loading="lazy" /> : frontPhoto(p) ? <img src={frontPhoto(p)} alt="" loading="lazy" /> : <PlaceArt place={artInput(p)} />}
           {p.hasPerk && <span className="perk-flag">{t('f.perk')}</span>}
           {p.sample && (
             <span className="badge sample" style={{ position: 'absolute', bottom: 10, left: 10 }}>

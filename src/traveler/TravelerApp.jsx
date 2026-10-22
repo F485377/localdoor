@@ -1,4 +1,4 @@
-import { DoorMark } from '../components/Logo.jsx';
+import Credits from './Credits.jsx';
 import { useEffect, useState } from 'react';
 import AuthScreen from '../components/AuthScreen.jsx';
 import ChatView from '../components/ChatView.jsx';
@@ -61,6 +61,7 @@ export default function TravelerApp() {
   else if (parts[0] === 'reset') page = <AuthScreen mode="reset" token={params.get('token')} />;
   else if (parts[0] === 'terms') page = <LegalPage kind="terms" lang={lang} />;
   else if (parts[0] === 'privacy') page = <LegalPage kind="privacy" lang={lang} />;
+  else if (parts[0] === 'credits') page = <Credits />;
   else page = <NotFound />;
 
   const unread = badges.messages + badges.bookings;
@@ -70,7 +71,6 @@ export default function TravelerApp() {
       <header className="topbar">
         <div className="topbar-inner">
           <Link to="/search" className="logo">
-            <DoorMark />
             Local<span>Door</span>
           </Link>
           <span className="spacer" />
